@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LaundryAI · 客服经理工作台原型（方案二·双模式）</title>
+<style>
+  :root{
+    --green:#35C393; --green-d:#26a87c; --green-l:#e8f8f1; --green-l2:#f3fbf8;
+    --ink:#1f2937; --ink-2:#4b5563; --ink-3:#8b95a3; --line:#eaeef2; --line-2:#f1f4f7;
+    --bg:#f5f7f9; --white:#fff;
+    --red:#ef4444; --red-l:#fdecec; --orange:#f59e0b; --orange-l:#fef6e7;
+    --gray:#9ca3af; --blue:#3b82f6;
+    --shadow:0 1px 3px rgba(16,24,40,.06),0 1px 2px rgba(16,24,40,.04);
+    --shadow-l:0 8px 28px rgba(16,24,40,.12);
+    --r:12px; --r-s:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Manrope,sans-serif;color:var(--ink);background:var(--bg);font-size:13px;line-height:1.5;overflow:hidden}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#d6dde4;border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .app{display:flex;flex-direction:column;height:100vh}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{height:56px;background:var(--white);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 20px;gap:28px;flex-shrink:0;z-index:30}
+  .logo{font-weight:800;font-size:20px;color:var(--green);letter-spacing:.5px}
+  .nav{display:flex;gap:4px}
+  .nav .tab{padding:6px 14px;border-radius:8px;color:var(--ink-3);font-weight:600;font-size:13px;position:relative}
+  .nav .tab.on{color:var(--green);background:var(--green-l)}
+  .top-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .icon-btn{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--ink-2);font-size:16px;position:relative}
+  .icon-btn:hover{background:var(--line-2)}
+  .icon-btn .dot{position:absolute;top:7px;right:7px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid #fff}
+  .role-switch{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--line);border-radius:9px;font-weight:600;font-size:12.5px;position:relative}
+  .role-switch:hover{border-color:var(--green);background:var(--green-l2)}
+  .role-switch .role-tag{color:var(--green)}
+  .help-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:9px;color:var(--green-d);font-weight:600;font-size:12.5px;background:var(--green-l)}
+  .help-btn:hover{background:#dcf3ea}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green),#5fd6ae);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+
+  .dropdown{position:absolute;top:46px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-l);padding:6px;min-width:200px;z-index:50;display:none}
+  .dropdown.show{display:block}
+  .dropdown .dd-item{padding:9px 11px;border-radius:8px;display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-2)}
+  .dropdown .dd-item:hover{background:var(--green-l2)}
+  .dropdown .dd-item.on{color:var(--green);font-weight:700;background:var(--green-l)}
+  .dropdown .dd-head{padding:7px 11px 4px;font-size:11px;color:var(--ink-3);font-weight:700}
+  .dropdown .dd-item .muted{margin-left:auto;font-size:11px;color:var(--ink-3);font-weight:400}
+
+  /* ---------- 概览条 ---------- */
+  .overview{background:var(--white);border-bottom:1px solid var(--line);padding:10px 20px;display:flex;align-items:center;gap:16px;flex-shrink:0}
+  .ov-greet{font-weight:700;font-size:14px}
+  .ov-stat{color:var(--ink-2);font-size:12.5px}
+  .ov-stat b{color:var(--ink)}
+  .ov-stat .em{color:var(--red);font-weight:700}
+  .period-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,#fff7e8,#fdeccd);border:1px solid #f6dca0;border-radius:10px;padding:7px 14px}
+  .period-banner .pb-txt{font-size:12.5px;color:#92611a;font-weight:600}
+  .period-banner .pb-txt b{color:#b8791f}
+  /* 概览条右侧常驻「直接问小e」主入口 */
+  .ask-top{margin-left:auto;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;cursor:pointer;
+    background:linear-gradient(135deg,var(--green) 0%,#2bb6a0 100%);color:#fff;font-weight:800;font-size:13px;box-shadow:0 3px 12px rgba(53,195,147,.32)}
+  .ask-top:hover{filter:brightness(1.05)}
+  .ask-top .at-s{font-weight:500;font-size:11px;opacity:.9;padding-left:8px;border-left:1px solid rgba(255,255,255,.4)}
+  .pill-btn{padding:5px 11px;border-radius:7px;background:var(--green);color:#fff;font-size:12px;font-weight:600}
+  .pill-btn.ghost{background:#fff;color:var(--green-d);border:1px solid var(--green)}
+  .pill-btn:hover{filter:brightness(1.05)}
+
+  /* ---------- 主体三栏 ---------- */
+  .main{flex:1;display:flex;min-height:0}
+  .col{display:flex;flex-direction:column;min-height:0}
+  .left{width:288px;border-right:1px solid var(--line);background:var(--white);flex-shrink:0}
+  .center{flex:1;min-width:0;background:var(--bg)}
+  .right{width:372px;border-left:1px solid var(--line);background:var(--white);flex-shrink:0}
+
+  /* ---------- 左栏 ---------- */
+  .left-search{padding:12px 14px 8px}
+  .search-box{display:flex;align-items:center;gap:8px;background:var(--line-2);border-radius:9px;padding:8px 11px;color:var(--ink-3);font-size:12.5px}
+  .search-box input{border:none;background:none;outline:none;flex:1;font-size:12.5px;color:var(--ink)}
+  .left-tabs{display:flex;gap:6px;padding:0 14px 10px}
+  .left-tabs .lt{padding:5px 11px;border-radius:20px;font-size:12px;color:var(--ink-3);background:var(--line-2);font-weight:600}
+  .left-tabs .lt.on{background:var(--green);color:#fff}
+  .left-scroll{flex:1;overflow-y:auto;padding:0 10px 16px}
+
+  .group{margin-bottom:6px}
+  .group-head{display:flex;align-items:center;gap:6px;padding:8px 6px 6px;font-size:12px;font-weight:700;color:var(--ink-2);cursor:pointer;user-select:none}
+  .group-head .gh-count{color:var(--ink-3);font-weight:600}
+  .group-head .caret{transition:transform .15s;font-size:10px;color:var(--ink-3)}
+  .group.collapsed .caret{transform:rotate(-90deg)}
+  .group.collapsed .group-body{display:none}
+  .group-head .gh-badge{margin-left:auto;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}
+  .gh-badge.prog{background:#eef2ff;color:#4f46e5}
+
+  .todo{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin:5px 4px;cursor:pointer;position:relative;transition:.12s}
+  .todo:hover{border-color:#cfe9dd;box-shadow:var(--shadow)}
+  .todo.sel{border-color:var(--green);box-shadow:0 0 0 2px var(--green-l)}
+  .todo .t-top{display:flex;align-items:center;gap:7px}
+  .dotmark{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .dotmark.p0{background:var(--red)} .dotmark.p1{background:var(--orange)} .dotmark.p2{background:#eab308} .dotmark.p3{background:var(--gray)}
+  .t-type{font-weight:700;font-size:12.5px}
+  .t-cust{color:var(--ink-2);font-size:12.5px}
+  .t-reason{color:var(--ink-3);font-size:11.5px;margin-top:4px;line-height:1.45}
+  .t-foot{display:flex;align-items:center;gap:8px;margin-top:7px}
+  .t-time{font-size:11px;color:var(--ink-3)}
+  .t-act{margin-left:auto;font-size:11.5px;color:var(--green-d);font-weight:700;padding:3px 9px;border-radius:7px;background:var(--green-l)}
+  .t-act:hover{background:#dcf3ea}
+  .src-badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px}
+  .src-badge.sys{background:#eef2ff;color:#4f46e5}
+  .src-badge.me{background:#fef3e7;color:#c2710c}
+  .progbar{height:4px;border-radius:3px;background:var(--line);margin-top:7px;overflow:hidden}
+  .progbar > i{display:block;height:100%;background:var(--green);border-radius:3px}
+  .prog-step{font-size:11px;color:var(--ink-2);font-weight:600;margin-top:6px}
+  .status-line{font-size:11.5px;color:var(--orange);font-weight:600;margin-top:5px;display:flex;align-items:center;gap:5px}
+
+  .cust-pool{margin:10px 4px 0;border-top:1px solid var(--line);padding-top:12px}
+  .cp-title{font-size:12px;font-weight:700;color:var(--ink-2);padding:0 6px 8px;display:flex;align-items:center;gap:6px}
+  .cp-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 4px}
+  .cp-cell{background:var(--green-l2);border:1px solid var(--line);border-radius:9px;padding:9px 10px;cursor:pointer}
+  .cp-cell:hover{border-color:var(--green);background:var(--green-l)}
+  .cp-num{font-weight:800;font-size:16px;color:var(--ink)}
+  .cp-lab{font-size:11px;color:var(--ink-3);margin-top:1px}
+
+  /* ---------- 中间工作区 ---------- */
+  .center-scroll{flex:1;overflow-y:auto;padding:22px 26px}
+  /* 概览态 */
+  .welcome h1{font-size:22px;font-weight:800;margin-bottom:6px}
+  .welcome .sub{color:var(--ink-2);font-size:13.5px;margin-bottom:22px}
+  .welcome .sub b{color:var(--ink)}
+  .sug-title{font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:12px}
+  .sug-list{display:flex;flex-direction:column;gap:10px;max-width:560px}
+  .sug{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.12s}
+  .sug:hover{border-color:var(--green);box-shadow:var(--shadow)}
+  .sug .rank{width:24px;height:24px;border-radius:7px;background:var(--green-l);color:var(--green-d);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .sug .s-main{font-weight:700;font-size:13.5px}
+  .sug .s-sub{color:var(--ink-3);font-size:12px;margin-top:2px}
+  .sug .s-go{margin-left:auto;color:var(--green-d);font-weight:700;font-size:12px}
+  .welcome-cta{margin-top:20px}
+  .quick-tip{margin-top:26px;max-width:560px;background:var(--green-l2);border:1px dashed #bfe6d6;border-radius:12px;padding:14px 16px;color:var(--ink-2);font-size:12.5px}
+  .quick-tip b{color:var(--green-d)}
+
+  /* 任务详情态 */
+  .task-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .task-head h2{font-size:18px;font-weight:800}
+  .badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:6px;background:var(--orange-l);color:var(--orange)}
+  .task-head .th-act{margin-left:auto;display:flex;gap:8px}
+  .btn{padding:7px 14px;border-radius:9px;font-size:12.5px;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--ink-2)}
+  .btn:hover{border-color:var(--green);color:var(--green-d)}
+  .btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+  .btn.primary:hover{filter:brightness(1.05);color:#fff}
+  .conclusion{background:linear-gradient(180deg,var(--green-l2),#fff);border:1px solid #cdebdd;border-radius:12px;padding:14px 16px;margin-bottom:16px}
+  .conclusion .c-tag{font-size:11px;font-weight:700;color:var(--green-d);margin-bottom:7px;display:flex;align-items:center;gap:6px}
+  .conclusion .c-body{font-size:13.5px;color:var(--ink);line-height:1.7}
+  .conclusion .c-body .hl{color:var(--red);font-weight:700}
+  .conclusion .c-sug{margin-top:8px;font-size:12.5px;color:var(--ink-2)}
+  .tabs2{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .tabs2 .t2{padding:8px 13px;font-size:12.5px;font-weight:600;color:var(--ink-3);border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tabs2 .t2.on{color:var(--green-d);border-color:var(--green)}
+  .timeline{position:relative;padding-left:4px}
+  .tl{display:flex;gap:12px;padding:10px 0;position:relative}
+  .tl .tl-dot{width:11px;height:11px;border-radius:50%;background:var(--green);margin-top:3px;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--green)}
+  .tl .tl-dot.warn{background:var(--orange);box-shadow:0 0 0 1.5px var(--orange)}
+  .tl .tl-dot.muted{background:var(--gray);box-shadow:0 0 0 1.5px var(--gray)}
+  .tl-line{position:absolute;left:5px;top:18px;bottom:-10px;width:1.5px;background:var(--line)}
+  .tl .tl-time{color:var(--ink-3);font-size:12px;width:80px;flex-shrink:0}
+  .tl .tl-txt{font-size:12.5px}
+  .tl .tl-txt.warn{color:var(--orange);font-weight:600}
+  .action-bar{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px}
+
+  /* 重内容（图表大表） */
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+  .panel-h{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .panel-h h3{font-size:15px;font-weight:800}
+  .panel-h .back{margin-left:auto;font-size:12px;color:var(--green-d);font-weight:700}
+  .donut-wrap{display:flex;align-items:center;gap:30px;flex-wrap:wrap}
+  .donut{width:150px;height:150px;border-radius:50%;position:relative;flex-shrink:0;
+    background:conic-gradient(#3b82f6 0 25%,#35C393 25% 85%,#f59e0b 85% 95%,#9ca3af 95% 100%)}
+  .donut::after{content:"";position:absolute;inset:26px;background:#fff;border-radius:50%}
+  .donut .dc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1}
+  .donut .dc b{font-size:24px;font-weight:800}
+  .donut .dc span{font-size:11px;color:var(--ink-3)}
+  .legend{display:flex;flex-direction:column;gap:10px}
+  .lg{display:flex;align-items:center;gap:9px;font-size:13px}
+  .lg i{width:11px;height:11px;border-radius:3px}
+  .lg b{margin-left:6px}
+  .bars{display:flex;align-items:flex-end;gap:26px;height:170px;padding:10px 10px 0}
+  .bar-col{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1}
+  .bar-col .bar{width:46px;border-radius:7px 7px 0 0;background:linear-gradient(180deg,#5fd6ae,var(--green));position:relative}
+  .bar-col .bar .bv{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:var(--ink)}
+  .bar-col .bar.up{background:linear-gradient(180deg,#f6a96a,var(--orange))}
+  .bar-col .bl{font-size:12px;color:var(--ink-2)}
+  table.data{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+  table.data th{text-align:left;color:var(--ink-3);font-weight:700;padding:9px 10px;border-bottom:1px solid var(--line);font-size:11.5px}
+  table.data td{padding:9px 10px;border-bottom:1px solid var(--line-2)}
+  table.data tr:hover td{background:var(--green-l2)}
+  .lvl{display:inline-block;width:20px;height:20px;border-radius:5px;text-align:center;line-height:20px;font-weight:800;font-size:11px;color:#fff}
+  .lvl.A{background:#3b82f6}.lvl.B{background:var(--green)}.lvl.C{background:var(--orange)}.lvl.D{background:var(--gray)}
+
+  /* ---------- 右栏 ---------- */
+  .right-head{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;flex-shrink:0}
+  .e-ava{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--green),#6ad9b3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
+  .right-head .rh-title{font-weight:800;font-size:13.5px}
+  .right-head .rh-sub{font-size:11px;color:var(--ink-3)}
+  .right-head .rh-act{margin-left:auto;display:flex;gap:4px}
+
+  .ctx-bar{padding:9px 14px;background:var(--green-l2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-size:12px;flex-shrink:0}
+  .ctx-bar .cx-ic{color:var(--green-d)}
+  .ctx-bar .cx-txt{font-weight:700;color:var(--ink)}
+  .ctx-bar .cx-sub{color:var(--ink-3)}
+  .ctx-bar .cx-r{margin-left:auto;display:flex;gap:6px}
+  .cx-btn{font-size:11.5px;color:var(--ink-2);padding:3px 8px;border-radius:6px;background:#fff;border:1px solid var(--line);position:relative}
+  .cx-btn:hover{border-color:var(--green);color:var(--green-d)}
+
+  .right-body{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:12px}
+
+  /* 进行中·最近 + 工具箱 */
+  .recent{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .recent-h{padding:9px 12px;font-size:12px;font-weight:700;color:var(--ink-2);background:var(--line-2);display:flex;align-items:center;gap:6px}
+  .recent-h .all{margin-left:auto;font-size:11px;color:var(--green-d);font-weight:700}
+  .rc-item{padding:9px 12px;display:flex;align-items:center;gap:9px;cursor:pointer;border-top:1px solid var(--line-2)}
+  .rc-item:hover{background:var(--green-l2)}
+  .rc-ic{width:26px;height:26px;border-radius:7px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .rc-ic.prog{background:#eef2ff}
+  .rc-main{flex:1;min-width:0}
+  .rc-t{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rc-s{font-size:11px;color:var(--ink-3);margin-top:1px}
+  .rc-warn{color:var(--orange);font-size:13px}
+
+  .tools-h{font-size:12px;font-weight:700;color:var(--ink-2);padding:2px 2px 0;display:flex;align-items:center;gap:6px}
+  .tools-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .tool{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px;cursor:pointer;transition:.12s}
+  .tool:hover{border-color:var(--green);box-shadow:var(--shadow);transform:translateY(-1px)}
+  .tool .tl-ic{font-size:17px}
+  .tool .tl-name{font-weight:700;font-size:12.5px;margin-top:6px}
+  .tool .tl-eg{font-size:10.5px;color:var(--ink-3);margin-top:4px;line-height:1.4}
+
+  /* 对话消息 */
+  .msg{display:flex;gap:9px;max-width:100%}
+  .msg.user{flex-direction:row-reverse}
+  .msg .m-ava{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  .msg.bot .m-ava{background:linear-gradient(135deg,var(--green),#6ad9b3);color:#fff}
+  .msg.user .m-ava{background:#dfe5ec;color:var(--ink-2)}
+  .bubble{padding:9px 12px;border-radius:12px;font-size:12.5px;line-height:1.6;max-width:80%}
+  .msg.bot .bubble{background:var(--green-l2);border:1px solid #e0f1ea;border-top-left-radius:3px}
+  .msg.user .bubble{background:var(--green);color:#fff;border-top-right-radius:3px}
+  .bubble .hl{color:var(--red);font-weight:700}
+  .msg.user .bubble .hl{color:#fff5d6}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;padding-left:33px}
+  .chip{padding:5px 11px;border:1px solid var(--green);color:var(--green-d);border-radius:18px;font-size:11.5px;font-weight:600;background:#fff;cursor:pointer}
+  .chip:hover{background:var(--green-l)}
+  .chip.next{border-color:var(--line);color:var(--ink-2)}
+  .chip.next:hover{border-color:var(--green);color:var(--green-d)}
+  .mini-actions{display:flex;gap:6px;margin-top:7px;padding-left:33px}
+  .mini-btn{font-size:11px;color:var(--ink-2);border:1px solid var(--line);padding:3px 9px;border-radius:7px;background:#fff}
+  .mini-btn:hover{border-color:var(--green);color:var(--green-d)}
+
+  /* 重内容摘要卡（右栏内） */
+  .sum-card{margin-left:33px;border:1px solid #d8ecf9;background:#f3f9fe;border-radius:11px;padding:11px 13px}
+  .sum-card .sc-h{display:flex;align-items:center;gap:7px;font-weight:700;font-size:12.5px;margin-bottom:5px}
+  .sum-card .sc-b{font-size:11.5px;color:var(--ink-2);line-height:1.5}
+  .sum-card .sc-expand{margin-top:9px;width:100%;text-align:center;padding:7px;border-radius:8px;background:var(--green);color:#fff;font-size:12px;font-weight:700}
+  .sum-card .sc-expand:hover{filter:brightness(1.05)}
+
+  /* 输入区 */
+  .input-zone{border-top:1px solid var(--line);padding:11px 13px;flex-shrink:0;background:#fff}
+  .input-box{display:flex;align-items:center;gap:9px;border:1.5px solid var(--line);border-radius:12px;padding:8px 11px;transition:.12s}
+  .input-box:focus-within{border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+  .input-box input{flex:1;border:none;outline:none;font-size:12.5px;background:none}
+  .send{width:30px;height:30px;border-radius:9px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+  .send:hover{filter:brightness(1.05)}
+  .disclaimer{text-align:center;font-size:11px;color:var(--ink-3);padding:7px;background:#fff;border-top:1px solid var(--line);flex-shrink:0}
+
+  /* 换技能菜单 */
+  .switch-menu{position:absolute;top:30px;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-l);padding:6px;min-width:240px;z-index:40;display:none}
+  .switch-menu.show{display:block}
+  .sm-head{padding:7px 10px 4px;font-size:11px;font-weight:700;color:var(--ink-3)}
+  .sm-item{padding:8px 10px;border-radius:8px;display:flex;align-items:center;gap:8px;font-size:12px}
+  .sm-item:hover{background:var(--green-l2)}
+  .sm-item .sm-ic{font-size:14px}
+  .sm-item .sm-meta{margin-left:auto;font-size:10.5px;color:var(--ink-3)}
+  .sm-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:2px}
+  .sm-grid .sm-item{justify-content:flex-start}
+
+  /* 导览遮罩 */
+  .tour-mask{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100;display:none}
+  .tour-mask.show{display:block}
+  .tour-pop{position:absolute;background:#fff;border-radius:14px;padding:18px 20px;width:300px;box-shadow:var(--shadow-l)}
+  .tour-pop h4{font-size:14.5px;font-weight:800;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+  .tour-pop p{font-size:12.5px;color:var(--ink-2);line-height:1.6}
+  .tour-foot{display:flex;align-items:center;margin-top:16px}
+  .tour-step{font-size:12px;color:var(--ink-3)}
+  .tour-btns{margin-left:auto;display:flex;gap:8px}
+  .tour-hl{position:fixed;border:2px solid var(--green);border-radius:12px;box-shadow:0 0 0 4px var(--green-l);z-index:101;pointer-events:none;transition:.2s}
+
+  /* 帮助面板 */
+  .help-panel{position:fixed;top:56px;right:0;bottom:0;width:380px;background:#fff;border-left:1px solid var(--line);box-shadow:var(--shadow-l);z-index:80;transform:translateX(100%);transition:.25s;overflow-y:auto}
+  .help-panel.show{transform:translateX(0)}
+  .help-panel .hp-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;font-weight:800;font-size:15px}
+  .help-panel .hp-body{padding:16px 18px}
+  .help-panel .hp-card{border:1px solid var(--line);border-radius:11px;padding:13px 14px;margin-bottom:11px}
+  .help-panel .hp-card h5{font-size:13px;font-weight:800;margin-bottom:6px;color:var(--green-d)}
+  .help-panel .hp-card p{font-size:12px;color:var(--ink-2);line-height:1.6}
+  .hist-group{font-size:11px;font-weight:700;color:var(--ink-3);margin:14px 0 8px}
+  .hist-item{display:flex;align-items:center;gap:10px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
+  .hist-item:hover{border-color:var(--green);background:var(--green-l2)}
+  /* 右栏标签：小e / 技能工具箱 */
+  .right-tabs{display:flex;gap:6px;padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--line);background:var(--green-l2)}
+  .right-tabs .rt{flex:1;padding:8px 6px;font-size:12px;font-weight:700;color:var(--ink-2);border:1px solid var(--line);background:#fff;border-radius:8px}
+  .right-tabs .rt.on{color:#fff;background:var(--green);border-color:var(--green)}
+  .right-tabs .rt:not(.on):hover{border-color:var(--green);color:var(--green-d)}
+  .todo.done{background:var(--line-2)}
+  .todo.done .t-act{background:#eef2f6;color:var(--ink-2)}
+  .switch-menu .sm-item.hot{background:var(--green-l);color:var(--green-d);font-weight:700;border-radius:7px;margin:2px 0}
+  /* 工具箱顶部「直接问小e」主入口 */
+  .ask-hero{display:flex;align-items:center;gap:11px;padding:13px 14px;margin-bottom:14px;border-radius:12px;cursor:pointer;
+    background:linear-gradient(135deg,var(--green) 0%,#2bb6a0 100%);color:#fff;box-shadow:0 4px 14px rgba(53,195,147,.28)}
+  .ask-hero:hover{filter:brightness(1.04)}
+  .ask-hero .ah-ic{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .ask-hero .ah-main{flex:1;min-width:0}
+  .ask-hero .ah-t{font-weight:800;font-size:13.5px}
+  .ask-hero .ah-s{font-size:11px;opacity:.92;margin-top:1px}
+  .ask-hero .ah-go{font-size:12px;font-weight:700;background:rgba(255,255,255,.22);padding:5px 10px;border-radius:8px;flex-shrink:0}
+
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:12.5px;z-index:200;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .hidden{display:none!important}
+
+  /* ---------- 方案标识 ---------- */
+  .scheme-tag{font-size:11px;font-weight:700;color:#7c3aed;background:#f1ecfd;border:1px solid #e0d4fb;padding:3px 9px;border-radius:6px}
+
+  /* ---------- 双模式：技能/分析模式（宽对话画布） ---------- */
+  .skillmode{display:none;flex:1;min-width:0;background:var(--bg)}
+  body.mode-skill .center{display:none}
+  body.mode-skill .right{display:none}
+  body.mode-skill .skillmode{display:flex;flex-direction:column}
+  .sm-top{height:48px;flex-shrink:0;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 20px}
+  .sm-back{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--green-d);cursor:pointer;padding:5px 10px;border-radius:8px}
+  .sm-back:hover{background:var(--green-l)}
+  .sm-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px}
+  .sm-title .sm-ico{width:26px;height:26px;border-radius:7px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .sm-title .sm-st{font-size:11px;color:var(--ink-3);font-weight:500}
+  .sm-top .sm-switch{margin-left:auto;position:relative;font-size:12px;font-weight:700;color:var(--ink-2);border:1px solid var(--line);padding:6px 12px;border-radius:8px;cursor:pointer}
+  .sm-top .sm-switch:hover{border-color:var(--green);color:var(--green-d)}
+  .sm-canvas{flex:1;overflow-y:auto;padding:24px 0}
+  .sm-inner{max-width:900px;margin:0 auto;padding:0 28px;display:flex;flex-direction:column;gap:18px}
+  .sm-inputzone{flex-shrink:0;border-top:1px solid var(--line);background:#fff;padding:14px 0}
+  .sm-inputinner{max-width:900px;margin:0 auto;padding:0 28px}
+  .sm-pills{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .sm-disc{text-align:center;font-size:11px;color:var(--ink-3);padding:7px 0 0}
+
+  /* 宽画布消息 */
+  .wmsg{display:flex;gap:12px}
+  .wmsg.user{flex-direction:row-reverse}
+  .wmsg .w-ava{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .wmsg.bot .w-ava{background:linear-gradient(135deg,var(--green),#6ad9b3);color:#fff}
+  .wmsg.user .w-ava{background:#dfe5ec;color:var(--ink-2)}
+  .wmsg .w-body{max-width:calc(100% - 84px)}
+  .wmsg.user .w-body{background:var(--green);color:#fff;padding:10px 14px;border-radius:13px;border-top-right-radius:4px;font-size:13.5px}
+  .wmsg.bot .w-body{font-size:13.5px;line-height:1.7}
+  .wmsg.bot .w-body > .w-text{background:#fff;border:1px solid var(--line);border-radius:13px;border-top-left-radius:4px;padding:12px 15px}
+  .wmsg .hl{color:var(--red);font-weight:700}
+  .wmsg.user .hl{color:#fff5d6}
+  .w-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:12px}
+  .w-card .panel-h{margin-bottom:14px}
+  .w-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line-2)}
+  .w-feedback{display:flex;gap:10px;margin-top:10px;color:var(--ink-3);font-size:13px}
+  .w-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <div class="logo">TEXCLOUD</div>
+    <span class="scheme-tag">方案二 · 双模式</span>
+    <div class="nav">
+      <div class="tab on">工作台</div>
+      <div class="tab">RFID 智能系统</div>
+    </div>
+    <div class="top-right">
+      <div class="role-switch" id="roleSwitch">
+        <span>👤 <b>客服经理</b></span><span style="color:var(--ink-3)">·张敏 ▾</span>
+        <div class="dropdown" id="roleDD">
+          <div class="dd-head">切换角色查看（本期仅客服经理可用）</div>
+          <div class="dd-item on">🎧 客服经理 <span class="muted">当前</span></div>
+          <div class="dd-item">🏭 工厂负责人 <span class="muted">待开放</span></div>
+          <div class="dd-item">💼 销售 <span class="muted">待开放</span></div>
+          <div class="dd-item">💰 财务 <span class="muted">待开放</span></div>
+        </div>
+      </div>
+      <button class="help-btn" id="helpBtn">❓ 怎么用</button>
+      <button class="icon-btn" title="历史对话记录" onclick="openHistory()">🕐</button>
+      <div class="avatar">张</div>
+    </div>
+  </div>
+
+  <!-- 概览条 -->
+  <div class="overview">
+    <span class="ov-greet">早上好，张经理 👋</span>
+    <span class="ov-stat">今日待办 <b>11</b> 项 · 紧急 <span class="em">2</span> 项 · 预计 <b>⏱约 2.5h</b></span>
+    <div class="period-banner" id="periodBanner">
+      <span class="pb-txt">💰 回款冲刺期（第 2 天 / 共 4 天）· 待回款 <b>6 家</b> / <b>¥132,058</b></span>
+      <button class="pill-btn ghost" onclick="openCollection()">查看列表</button>
+      <button class="pill-btn" onclick="toast('已生成 6 份催款话术')">批量催款话术</button>
+    </div>
+    <button class="ask-top" onclick="startNewChat()">💬 直接问小e<span class="at-s">任何问题都行</span></button>
+  </div>
+
+  <!-- 三栏 -->
+  <div class="main">
+    <!-- 左栏 -->
+    <div class="col left" id="leftCol">
+      <div class="left-search">
+        <div class="search-box">🔍 <input id="todoSearch" placeholder="搜索待办（类型 / 客户 / 原因）" oninput="filterTodos(this.value)"></div>
+      </div>
+      <div class="left-scroll" id="todoList"><!-- JS 渲染 --></div>
+    </div>
+
+    <!-- 中栏 -->
+    <div class="col center">
+      <div class="center-scroll" id="centerView"><!-- JS 渲染 --></div>
+    </div>
+
+    <!-- 右栏 -->
+    <div class="col right" id="rightCol">
+      <div class="right-head">
+        <div class="e-ava">e</div>
+        <div>
+          <div class="rh-title">小e</div>
+          <div class="rh-sub" id="rhSub">你的智能洗涤助手</div>
+        </div>
+      </div>
+      <div class="right-tabs" id="rightTabs">
+        <button class="rt" data-t="copilot" onclick="switchRightTab('copilot')">💬 小e</button>
+        <button class="rt on" data-t="tools" onclick="switchRightTab('tools')">🧰 技能工具箱</button>
+      </div>
+      <div id="ctxBarWrap"></div>
+      <div class="right-body" id="rightBody"><!-- JS 渲染 --></div>
+      <div class="input-zone" id="inputZone">
+        <div class="input-box">
+          <span style="color:var(--ink-3)">📎</span>
+          <input id="chatInput" placeholder="就当前待办向小e 追问 / 确认…" onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="send" onclick="sendMsg()">↑</button>
+        </div>
+      </div>
+      <div class="disclaimer" id="rightDisc">小e AI 可能会产生错误，请核实重要信息。</div>
+    </div>
+
+    <!-- 技能/分析模式：宽对话画布（中右合并） -->
+    <div class="skillmode" id="skillMode">
+      <div class="sm-top">
+        <div class="sm-back" onclick="exitSkillMode()">← 返回待办</div>
+        <div class="sm-title" id="smTitle"></div>
+        <div class="sm-switch" onclick="toggleWideSwitch(event)">换技能 ▾
+          <div class="switch-menu" id="wideSwitchMenu" onclick="event.stopPropagation()"></div>
+        </div>
+      </div>
+      <div class="sm-canvas" id="smCanvas"><div class="sm-inner" id="smMsgs"></div></div>
+      <div class="sm-inputzone">
+        <div class="sm-inputinner">
+          <div class="sm-pills" id="smPills"></div>
+          <div class="input-box">
+            <span style="color:var(--ink-3)">📎</span>
+            <input id="smInput" placeholder="继续追问，或换个客户…" onkeydown="if(event.key==='Enter')sendMsgWide()">
+            <button class="send" onclick="sendMsgWide()">↑</button>
+          </div>
+          <div class="sm-disc">小e AI 可能会产生错误，请核实重要信息。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 导览 -->
+<div class="tour-mask" id="tourMask">
+  <div class="tour-hl" id="tourHl"></div>
+  <div class="tour-pop" id="tourPop">
+    <h4 id="tourTitle"></h4>
+    <p id="tourText"></p>
+    <div class="tour-foot">
+      <span class="tour-step" id="tourStep"></span>
+      <div class="tour-btns">
+        <button class="btn" onclick="endTour()">跳过</button>
+        <button class="btn primary" onclick="nextTour()" id="tourNext">下一步</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 帮助面板 -->
+<div class="help-panel" id="helpPanel">
+  <div class="hp-head">❓ 怎么用这个工作台<button class="icon-btn" style="margin-left:auto" onclick="toggleHelp(false)">✕</button></div>
+  <div class="hp-body">
+    <div class="hp-card"><h5>① 进页面先看左栏「今日待办」</h5><p>系统替你盯着的活儿（漏单、客诉、回款、重污率…）会自动列在左栏，按优先级排好。红点=紧急。每条都写了"为什么出现"和预计耗时，点一下就能处理。</p></div>
+    <div class="hp-card"><h5>② 要查/要办，点右栏「技能工具箱」</h5><p>想主动查一件事（某客户今天送净了吗、反洗率、账单…），在右栏点对应技能卡。小e 会问你"查哪个客户"，点客户名即可，秒出结果。</p></div>
+    <div class="hp-card"><h5>③ 没办完的活儿不会丢</h5><p>处理到一半切走也没关系——它会置顶在左栏「进行中」分组，随时点[继续]接着办。</p></div>
+    <div class="hp-card"><h5>④ 内容多的分析在中间大区看</h5><p>反洗率趋势、客户分级这类带图表大表的，右栏只给摘要，点[展开]会在中间宽区铺开，看得清楚。</p></div>
+    <div class="hp-card"><h5>试试这些问法</h5><p>· 观海听澜今天送净了吗<br>· 健龙酒店近30天反洗率<br>· 帮我开通新客户美居酒店<br>· 这个月哪些客户没达低消</p></div>
+  </div>
+</div>
+
+<!-- 历史对话记录 抽屉 -->
+<div class="help-panel" id="historyPanel">
+  <div class="hp-head">🕐 历史对话记录<button class="icon-btn" style="margin-left:auto" onclick="closeHistory()">✕</button></div>
+  <div class="hp-body">
+    <div class="search-box" style="margin-bottom:6px">🔍 <input placeholder="搜索会话标题 / 客户名"></div>
+    <div id="histList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 数据 ============ */
+// 被动触发技能（严格取自 sheet2「系统被动触发」+ 清滞留计算）
+const SKILLS = [
+  {id:'delivery', ic:'🔍', name:'是否收送核实', eg:'试试：观海听澜今天送净了吗', type:'query'},
+  {id:'wrong',    ic:'🔄', name:'送错核实',     eg:'核对某客户送净数量/包数', type:'query'},
+  {id:'rewash',   ic:'💧', name:'反洗率查询',   eg:'健龙酒店近30天各类反洗率', type:'heavy'},
+  {id:'stock',    ic:'📦', name:'客户自行盘点', eg:'导出各品类滞留区间库存差数', type:'query'},
+  {id:'scrap',    ic:'🗑', name:'报废布草',     eg:'查残值 + epc 流转', type:'query'},
+  {id:'bill',     ic:'💰', name:'账单/发票',    eg:'某客户账单明细和收款', type:'query'},
+  {id:'qc',       ic:'📋', name:'质量抽检报告', eg:'基于抽检表生成抽检报告', type:'heavy'},
+  {id:'complaint',ic:'📷', name:'客诉登记',     eg:'上传照片自动登记客诉表', type:'query'},
+  {id:'onboard',  ic:'🆕', name:'新客户开通',   eg:'CRM→texcloud→erp 一条龙', type:'flow'},
+  {id:'retain',   ic:'🧮', name:'清滞留计算',   eg:'按免赔+折扣算清滞留金额', type:'flow'},
+];
+const RECENT = [
+  {id:'r1', prog:true, ic:'🆕', t:'新客户开通·美居酒店', s:'进行中 ②/④ · 已填合同信息', warn:true},
+  {id:'r2', prog:false, ic:'💧', t:'反洗率·观海听澜', s:'3 条 · 2 分钟前'},
+];
+// 主动触发待办（严格取自 sheet2「系统监控主动触发」9 类；进行中含一条被动技能的半成品）
+const TODOS = {
+  progress:[
+    {id:'p1', src:'sys', p:'p0', type:'疑似漏单', cust:'观海听澜', status:'已联系车队 · 待客户回复', time:'15min', skill:'delivery'},
+    {id:'p2', src:'me', skill:'onboard', type:'新客户开通', cust:'美居酒店', step:2, total:4, stepTxt:'已填合同信息', time:'5min'},
+  ],
+  urgent:[
+    {id:'u1', src:'sys', p:'p0', type:'高级客诉跟踪', cust:'望海大酒店', reason:'同类客诉本月第 3 次 · 已自动升级', time:'20min'},
+    {id:'u2', src:'sys', p:'p0', type:'疑似漏单', cust:'艾朵公寓', reason:'隔天收送 · 10 点判定无净物订单', time:'15min', skill:'delivery'},
+  ],
+  today:[
+    {id:'t1', src:'sys', p:'p1', type:'滞留待清算', cust:'锦庭酒店', reason:'滞留超比例 · 已达清算条件（旺季加权）', time:'15min', skill:'retain'},
+    {id:'t2', src:'sys', p:'p1', type:'现场盘点提醒', cust:'云栖公寓', reason:'滞留占比超 30% · 建议安排现场盘点', time:'4h', skill:'stock'},
+  ],
+  period:[
+    {id:'c1', src:'sys', p:'p1', type:'待回款跟进', cust:'6 家 · ¥132,058', reason:'回款冲刺期（第2天/共4天）· 定时推送欠款', time:'30min', tag:'回款期', skill:'bill'},
+    {id:'c2', src:'sys', p:'p1', type:'重污率确认', cust:'TOP30 客户', reason:'每月1号计算巾类重污率 · 待确认是否计费', time:'15min', tag:'重污日'},
+    {id:'c3', src:'sys', p:'p2', type:'低消未达预警', cust:'3 家', reason:'月底推送 · 未达最低消费（>1500元）', time:'5min', tag:'低消预警'},
+    {id:'c4', src:'sys', p:'p2', type:'拜访分析报告', cust:'5 家', reason:'每月定期 · 基于 CRM 拜访内容生成', time:'10min', tag:'月度'},
+    {id:'c5', src:'sys', p:'p3', type:'客户分级分析', cust:'全部客户', reason:'年度 · 定时分析床位/消费/回款/滞留', time:'2-4h', tag:'年度'},
+  ],
+};
+const CUST = {
+  '观海听澜':{lvl:'A',bed:120,rewash:'18.2%',retain:'28%',bill:'¥8,320'},
+  '健龙酒店':{lvl:'B',bed:80,rewash:'32.3%',retain:'15%',bill:'¥5,600'},
+  '艾朵公寓':{lvl:'C',bed:45,rewash:'12%',retain:'20%',bill:'¥3,100'},
+};
+// 客户列表数据（flags: attention=需关注 / retain=滞留预警 / rewash=反洗率高 / collection=待回款）
+const CUSTOMERS=[
+  {name:'观海听澜',lvl:'A',bed:120,rewash:'18.2%',retain:'28%',bill:'¥8,320',risk:'近7日疑似漏单·滞留偏高',last:'今日·疑似漏单',flags:['attention','collection']},
+  {name:'健龙酒店',lvl:'B',bed:80,rewash:'32.3%',retain:'15%',bill:'¥5,600',risk:'反洗率↑32.3%·配送客诉',last:'3天前客诉',flags:['attention','rewash','collection']},
+  {name:'望海大酒店',lvl:'B',bed:110,rewash:'21%',retain:'18%',bill:'¥7,400',risk:'同类客诉本月第3次',last:'高级客诉跟踪',flags:['attention']},
+  {name:'邻海畔',lvl:'D',bed:45,rewash:'14%',retain:'35%',bill:'¥12,800',risk:'回款逾期3天·滞留35%',last:'待回款',flags:['attention','retain','collection']},
+  {name:'锦庭酒店',lvl:'B',bed:90,rewash:'16%',retain:'33%',bill:'¥18,400',risk:'滞留33%·达清算条件',last:'滞留清算',flags:['attention','retain','collection']},
+  {name:'星河公寓',lvl:'C',bed:50,rewash:'20%',retain:'31%',bill:'¥9,200',risk:'滞留31%·货拉拉透支',last:'加急配送',flags:['attention','retain','collection']},
+  {name:'云栖公寓',lvl:'C',bed:60,rewash:'17%',retain:'38%',bill:'¥4,100',risk:'滞留38%·占比最高',last:'5天前盘点',flags:['attention','retain']},
+  {name:'海岸华庭',lvl:'B',bed:95,rewash:'19%',retain:'32%',bill:'¥6,700',risk:'滞留32%',last:'2天前清滞留',flags:['attention','retain']},
+  {name:'艾朵公寓',lvl:'C',bed:45,rewash:'12%',retain:'20%',bill:'¥3,100',risk:'今日疑似漏单',last:'今日·疑似漏单',flags:['attention']},
+  {name:'悦海居',lvl:'C',bed:55,rewash:'28%',retain:'22%',bill:'¥3,900',risk:'反洗率↑28%',last:'反洗率偏高',flags:['attention','rewash']},
+  {name:'锦尚酒店',lvl:'B',bed:70,rewash:'15%',retain:'19%',bill:'¥5,050',risk:'本月低消未达标',last:'低消预警',flags:['attention']},
+  {name:'江畔人家',lvl:'C',bed:48,rewash:'16%',retain:'21%',bill:'¥3,400',risk:'待确认收送',last:'待确认收送',flags:['attention']},
+  {name:'悠然清居',lvl:'C',bed:40,rewash:'15%',retain:'22%',bill:'¥7,058',risk:'正常',last:'待确认收送',flags:[]},
+];
+// 历史对话记录
+const HISTORY={
+  '今天':[
+    {ic:'💧',t:'反洗率·观海听澜',meta:'3 条 · 11:20',tag:'技能',act:"resumeRecent('r2')"},
+    {ic:'🔍',t:'是否收送·健龙酒店',meta:'5 条 · 10:05',tag:'技能',act:"openSkill('delivery')"},
+    {ic:'🔴',t:'疑似漏单·观海听澜',meta:'来自待办 · 09:30',tag:'待办',act:"openTodo('p1')"},
+  ],
+  '昨天':[
+    {ic:'🆕',t:'新客户开通·美居酒店',meta:'进行中 ②/④',tag:'我发起·进行中',warn:true,act:"resumeRecent('r1')"},
+    {ic:'⭐',t:'客户分级分析（年度）',meta:'已导出报告 · 16:40',tag:'分析',act:"expandTier()"},
+  ],
+  '更早':[
+    {ic:'🧮',t:'清滞留计算·锦庭酒店',meta:'6/21 · 已完成',tag:'技能',act:"openSkill('retain')"},
+    {ic:'💰',t:'账单核对·邻海畔',meta:'6/20 · 已完成',tag:'技能',act:"openSkill('bill')"},
+  ],
+};
+
+/* ============ 状态 ============ */
+let state = { center:'welcome', selTodo:null, rightMode:'idle', skill:null, return:null, rightTab:'tools', todoQuery:'' };
+/* 记住被折叠的分组，避免每次 renderTodos 后状态丢失 */
+let collapsedGroups = new Set(['period','done']);
+function toggleGroup(key, el){
+  el.classList.toggle('collapsed');
+  if(el.classList.contains('collapsed')) collapsedGroups.add(key); else collapsedGroups.delete(key);
+}
+
+/* ============ 双模式核心 ============ */
+function setMode(m){ document.body.classList.toggle('mode-skill', m==='skill'); }
+function snapshotView(){ return {center:state.center, todo:state.selTodo}; }
+function scrollWide(){ const c=document.getElementById('smCanvas'); setTimeout(()=>c.scrollTop=c.scrollHeight,30); }
+
+// 点技能卡 / 任意技能入口 → 进入「技能·分析模式」宽对话画布
+function openSkill(id){ enterSkillMode(id); }
+function enterSkillMode(id, cust, restoredHtml){
+  const s=SKILLS.find(x=>x.id===id); if(!s)return;
+  if(!document.body.classList.contains('mode-skill')) state.return = snapshotView();
+  setMode('skill'); state.skill=s; state.selTodo=null; renderTodos();
+  document.getElementById('smTitle').innerHTML=`<span class="sm-ico">${s.ic}</span>${s.name}<span class="sm-st">· ${s.type==='flow'?'分步向导':(s.type==='heavy'?'数据分析':'快速查询')}</span>`;
+  document.getElementById('smPills').innerHTML = Object.keys(CUST).map(c=>`<span class="chip" onclick="wideAnswer('${id}','${c}')">${c}</span>`).join('')+`<span class="chip next" onclick="document.getElementById('smInput').focus()">其他客户…</span>`;
+  const msgs=document.getElementById('smMsgs');
+  if(restoredHtml){ msgs.innerHTML=restoredHtml; }
+  else {
+    let intro;
+    if(s.type==='flow'&&id==='onboard') intro='新客户开通（步骤 1/4）。先填客户基础信息：名称 / 营业执照 / 床位数 / 布草间位置。填好后我自动串联 CRM → texcloud → 企微 ERP。';
+    else if(s.type==='flow') intro=`${s.name}（分步向导）。先选择要操作的客户，我来逐步引导计算。`;
+    else if(s.type==='heavy') intro=`要分析哪个客户的「${s.name}」？选一个客户，我会在这里铺开完整图表和明细。`;
+    else intro=`要查哪个客户的「${s.name}」？点客户名或直接输入。`;
+    const picks = (s.type==='flow'&&id==='onboard')
+      ? `<span class="chip" onclick="wideAnswer('onboard','美居酒店')">开始填写</span>`
+      : Object.keys(CUST).map(c=>`<span class="chip" onclick="wideAnswer('${id}','${c}')">${c}</span>`).join('');
+    msgs.innerHTML=`<div class="wmsg bot"><div class="w-ava">e</div><div class="w-body"><div class="w-text">${intro}</div><div class="w-chips">${picks}</div></div></div>`;
+  }
+  scrollWide();
+}
+function startNewChat(){
+  // 进入一个不限技能的自由对话（宽画布）
+  if(!document.body.classList.contains('mode-skill')) state.return = snapshotView();
+  setMode('skill'); state.skill={id:'free',name:'新对话',type:'free'}; state.selTodo=null; renderTodos();
+  document.getElementById('smTitle').innerHTML=`<span class="sm-ico">💬</span>新对话<span class="sm-st">· 不限技能</span>`;
+  document.getElementById('smPills').innerHTML=`<span class="chip next" onclick="document.getElementById('smInput').focus()">直接输入你的问题…</span>`;
+  document.getElementById('smMsgs').innerHTML=`<div class="wmsg bot"><div class="w-ava">e</div><div class="w-body"><div class="w-text">新对话已开始 👋 你可以问我任何问题——查数据、起草话术、解释流程；也可以随时点右上角「换技能」。</div></div></div>`;
+  scrollWide();
+  setTimeout(()=>{const i=document.getElementById('smInput'); if(i) i.focus();},60);
+}
+function exitSkillMode(){
+  setMode('todo'); state.skill=null;
+  const r=state.return||{center:'welcome'};
+  if(r.center==='task'&&r.todo) openTodo(r.todo);
+  else if(r.center==='collection') openCollection();
+  else if(r.center==='customers') renderCustomers('all');
+  else { state.rightMode='idle'; renderWelcome(); renderRight(); }
+}
+function wideAnswer(id,cust){
+  const msgs=document.getElementById('smMsgs');
+  msgs.innerHTML+=`<div class="wmsg user"><div class="w-ava">张</div><div class="w-body">${cust}</div></div>`;
+  let r;
+  if(id==='rewash') r=wideRewash(cust);
+  else if(id==='qc') r=wideQC(cust);
+  else if(id==='delivery') r=wideText(`${cust}：污物已收 <b>6/16 22:15</b>，其后已有净物订单（6/17 09:10 送达）✓ <span class="hl">今日已送净</span>，无需补送。`, [['核实下一个',`openSkill('delivery')`],['完成并返回',`exitSkillMode()`]]);
+  else if(id==='bill') r=wideText(`${cust}：本月账单 <b>${(CUST[cust]||{}).bill||'¥6,200'}</b>，状态 <span class="hl">未付款（逾期1天）</span>，未开票。`, [['生成催款话术',`toast('已生成催款话术')`],['跳转对账单',`toast('跳转对账单')`],['完成并返回',`exitSkillMode()`]]);
+  else if(id==='scrap') r=wideText(`${cust}：本批报废布草 3 件，残值合计 <b>¥186</b>（含 epc 流转记录）。可一键生成短信发客户加入账单。`, [['生成短信',`toast('已生成短信·待发送')`],['完成并返回',`exitSkillMode()`]]);
+  else if(id==='onboard') r=wideText(`已记录「${cust}」合同信息。<b>步骤 ②/④：</b>勾选送洗品类、录入低消区间与押金。完成后我会发起合同审批并自动推送 ERP。`, [['继续步骤 ③',`toast('进入步骤③·审批')`],['暂存并返回',`exitSkillMode()`]]);
+  else if(id==='retain') r=wideText(`${cust}：滞留 >60 天共 <b>47 件</b>，成本价合计 ¥3,200，按 1% 免赔 + 8 折计算后应清 <b>¥1,840</b>（已抵扣暂存 ¥320）。`, [['生成清滞留单',`toast('已生成清滞留单')`],['完成并返回',`exitSkillMode()`]]);
+  else r=wideText(`${cust}：已执行「${(SKILLS.find(x=>x.id===id)||{}).name}」，结果如上。`, [['再来一个',`openSkill('${id}')`],['完成并返回',`exitSkillMode()`]]);
+  msgs.innerHTML+=r; scrollWide();
+}
+function wideText(html, chips){
+  const c=(chips||[]).map(x=>`<span class="chip next" onclick="${x[1]}">${x[0]}</span>`).join('');
+  return `<div class="wmsg bot"><div class="w-ava">e</div><div class="w-body"><div class="w-text">${html}</div>${c?`<div class="w-chips">${c}</div>`:''}</div></div>`;
+}
+function wideRewash(cust){
+  return `<div class="wmsg bot"><div class="w-ava">e</div><div class="w-body">
+    <div class="w-text">${cust} 近 30 天反洗率偏高：床单 <span class="hl">32.3%↑</span>、被套 26.8%↑。完整分析如下：</div>
+    <div class="w-card"><div class="panel-h"><h3>💧 反洗率分析 · ${cust}（近30天）</h3></div>
+      <div class="bars">
+        <div class="bar-col"><div class="bar up" style="height:80%"><span class="bv">32.3%↑</span></div><div class="bl">床单</div></div>
+        <div class="bar-col"><div class="bar up" style="height:67%"><span class="bv">26.8%↑</span></div><div class="bl">被套</div></div>
+        <div class="bar-col"><div class="bar" style="height:48%"><span class="bv">19.4%</span></div><div class="bl">枕套</div></div>
+        <div class="bar-col"><div class="bar" style="height:30%"><span class="bv">12.1%</span></div><div class="bl">毛巾</div></div>
+      </div></div>
+    <div class="w-card"><div class="panel-h"><h3>分品类反洗明细</h3></div>
+      <table class="data"><thead><tr><th>品类</th><th>本期</th><th>上期</th><th>变化</th><th>主要原因</th><th>建议</th></tr></thead><tbody>
+        <tr><td>床单</td><td style="color:var(--red);font-weight:700">32.3%</td><td>30.5%</td><td style="color:var(--red)">↑1.8%</td><td>植物油 7.6% / 黄斑 5.4%</td><td>客户拜访 + 跟进车间</td></tr>
+        <tr><td>被套</td><td style="color:var(--red);font-weight:700">26.8%</td><td>25.0%</td><td style="color:var(--red)">↑1.8%</td><td>残胶 6.3% / 植物油 4.3%</td><td>核实化料</td></tr>
+        <tr><td>枕套</td><td>19.4%</td><td>18.1%</td><td style="color:var(--orange)">↑1.3%</td><td>擦痕 4% / 锈 3.5%</td><td>正常解释</td></tr>
+      </tbody></table>
+      <div class="w-actions"><button class="btn" onclick="toast('已导出反洗率报告')">导出报告</button><button class="btn" onclick="toast('已生成客户话术')">生成客户话术</button><button class="btn primary" onclick="toast('已生成跟进待办 → 工作台')">生成待办 → 工作台</button></div>
+      <div class="w-feedback">👍　👎　📋 复制</div>
+    </div>
+    <div class="w-chips"><span class="chip next" onclick="wideAnswer('rewash','健龙酒店')">对比健龙酒店</span><span class="chip next" onclick="exitSkillMode()">完成并返回</span></div>
+  </div></div>`;
+}
+function wideQC(cust){
+  return `<div class="wmsg bot"><div class="w-ava">e</div><div class="w-body">
+    <div class="w-text">已基于布草抽检表生成抽检报告（瑞款 3.2–5.16）：</div>
+    <div class="w-card"><div class="panel-h"><h3>📋 质量抽检报告</h3></div>
+      <table class="data"><thead><tr><th>品类</th><th>反洗率</th><th>上次</th><th>TOP 异常</th></tr></thead><tbody>
+        <tr><td>床单</td><td style="color:var(--red);font-weight:700">32.3%↑</td><td>30.5%</td><td>植物油 7.6% / 黄斑 5.4% / 拖痕 5.2%</td></tr>
+        <tr><td>被套</td><td style="color:var(--red);font-weight:700">26.8%↑</td><td>25.0%</td><td>残胶 6.3% / 植物油 4.3%</td></tr>
+        <tr><td>枕套</td><td>19.4%↑</td><td>18.1%</td><td>擦痕 4% / 锈 3.5% / 面料异常 3.5%</td></tr>
+      </tbody></table>
+      <div class="w-actions"><button class="btn primary" onclick="toast('已导出抽检报告')">导出报告</button></div>
+    </div>
+    <div class="w-chips"><span class="chip next" onclick="exitSkillMode()">完成并返回</span></div>
+  </div></div>`;
+}
+function sendMsgWide(){
+  const inp=document.getElementById('smInput'); const v=inp.value.trim(); if(!v)return;
+  const msgs=document.getElementById('smMsgs');
+  msgs.innerHTML+=`<div class="wmsg user"><div class="w-ava">张</div><div class="w-body">${v}</div></div>`; inp.value=''; scrollWide();
+  setTimeout(()=>{ msgs.innerHTML+=wideText('收到～（演示）在宽画布里，图表和明细会和对话一起内联展开，无需再切到别处看。'); scrollWide(); },300);
+}
+function toggleWideSwitch(e){
+  e.stopPropagation(); const m=document.getElementById('wideSwitchMenu');
+  m.innerHTML=`<div class="sm-head">— 切换技能 —</div>
+    <div class="sm-grid">${SKILLS.map(s=>`<div class="sm-item" onclick="openSkill('${s.id}')"><span class="sm-ic">${s.ic}</span>${s.name.slice(0,5)}</div>`).join('')}</div>
+    <div class="sm-head">— 继续最近对话 —</div>
+    ${RECENT.map(r=>`<div class="sm-item" onclick="resumeRecent('${r.id}')"><span class="sm-ic">${r.ic}</span>${r.t}<span class="sm-meta">${r.s.split('·')[0]}</span></div>`).join('')}`;
+  m.classList.toggle('show');
+}
+// 右栏技能 copilot（待办模式下，如回款助手）
+function renderRightSkill(){
+  document.getElementById('rhSub').textContent=(state.skill&&state.skill.name)||'技能';
+  document.getElementById('rightBody').innerHTML=`<div class="msg bot"><div class="m-ava">e</div><div class="bubble">已进入「${(state.skill||{}).name||''}」。左侧/中栏是汇总，我可以帮你生成催款话术或逐户跟进。</div></div>
+    <div class="mini-actions"><button class="mini-btn" onclick="toast('已生成 6 份催款话术')">批量话术</button><button class="mini-btn" onclick="backToTools()">完成</button></div>`;
+  scrollRight();
+}
+
+/* ============ 左栏渲染 ============ */
+function todoCard(t){
+  const sel = state.selTodo===t.id ? 'sel':'';
+  if(t.src==='me'){ // 技能进行中
+    return `<div class="todo ${sel}" onclick="openTodo('${t.id}')">
+      <div class="t-top"><span class="src-badge me">我发起</span><span class="t-type">${t.type}</span><span class="t-cust">·${t.cust}</span></div>
+      <div class="prog-step">步骤 ②/④ · ${t.stepTxt}</div>
+      <div class="progbar"><i style="width:${t.step/t.total*100}%"></i></div>
+      <div class="t-foot"><span class="t-time">⏱${t.time}</span><button class="t-act" onclick="event.stopPropagation();openTodo('${t.id}')">继续</button></div>
+    </div>`;
+  }
+  if(t.status){ // 待办进行中
+    return `<div class="todo ${sel}" onclick="openTodo('${t.id}')">
+      <div class="t-top"><span class="src-badge sys">系统待办</span><span class="dotmark ${t.p}"></span><span class="t-type">${t.type}</span><span class="t-cust">·${t.cust}</span></div>
+      <div class="status-line">⏳ ${t.status}</div>
+      <div class="t-foot"><span class="t-time">⏱${t.time}</span><button class="t-act" onclick="event.stopPropagation();openTodo('${t.id}')">继续处理</button></div>
+    </div>`;
+  }
+  return `<div class="todo ${sel}" onclick="openTodo('${t.id}')">
+    <div class="t-top"><span class="dotmark ${t.p}"></span><span class="t-type">${t.type}</span><span class="t-cust">·${t.cust}</span>
+      ${t.tag?`<span class="src-badge sys" style="margin-left:auto">${t.tag}</span>`:''}</div>
+    <div class="t-reason">${t.reason}</div>
+    <div class="t-foot"><span class="t-time">⏱${t.time}</span><button class="t-act" onclick="event.stopPropagation();openTodo('${t.id}')">处理</button></div>
+  </div>`;
+}
+function matchTodo(t,q){ if(!q)return true; return `${t.type} ${t.cust} ${t.reason||''} ${t.status||''} ${t.stepTxt||''} ${t.tag||''}`.toLowerCase().includes(q); }
+function filterTodos(q){ state.todoQuery=(q||'').trim(); renderTodos(); }
+function renderTodos(){
+  const q=(state.todoQuery||'').toLowerCase();
+  const g=(title,key,extra='')=>{
+    const items=TODOS[key].filter(t=>matchTodo(t,q));
+    if(q && !items.length) return '';
+    const collapsed = q ? false : collapsedGroups.has(key);
+    return `<div class="group${collapsed?' collapsed':''}" id="grp-${key}">
+    <div class="group-head" onclick="toggleGroup('${key}',this.parentNode)">
+      <span class="caret">▼</span>${title} <span class="gh-count">(${items.length})</span>${extra}</div>
+    <div class="group-body">${items.map(todoCard).join('')}</div></div>`;
+  };
+  let html = g('进行中','progress', q?'':'<span class="gh-badge prog" style="margin-left:auto">置顶</span>')
+    + g('紧急','urgent') + g('今日','today') + g('周期','period');
+  if(!q){
+    html += `<div class="cust-pool">
+        <div class="cp-title">👥 我的客户池</div>
+        <div class="cp-grid">
+          <div class="cp-cell" onclick="renderCustomers('all')"><div class="cp-num">185</div><div class="cp-lab">我的客户</div></div>
+          <div class="cp-cell" onclick="renderCustomers('attention')"><div class="cp-num" style="color:var(--orange)">12</div><div class="cp-lab">需关注</div></div>
+          <div class="cp-cell" onclick="openCollection()"><div class="cp-num" style="color:var(--red)">6</div><div class="cp-lab">待回款</div></div>
+          <div class="cp-cell" onclick="renderCustomers('retain')"><div class="cp-num" style="color:var(--orange)">5</div><div class="cp-lab">滞留预警</div></div>
+        </div></div>`
+      + completedGroup();
+  } else {
+    const dc=COMPLETED.filter(c=>matchTodo(c,q));
+    if(dc.length) html += `<div class="group" id="grp-done"><div class="group-head"><span class="caret" style="visibility:hidden">▼</span>✓ 已完成 <span class="gh-count">(${dc.length})</span></div>
+      <div class="group-body">${dc.map(c=>`<div class="todo done"><div class="t-top"><span class="dotmark ${c.p}"></span><span class="t-type" style="text-decoration:line-through;color:var(--ink-3)">${c.type}</span><span class="t-cust">·${c.cust}</span></div><div class="t-foot"><span class="t-time">✓ ${c.doneAt} 完成</span><button class="t-act" onclick="event.stopPropagation();restoreTodo('${c.id}')">↩ 标记未完成</button></div></div>`).join('')}</div></div>`;
+    if(!html) html = `<div style="padding:26px 12px;text-align:center;color:var(--ink-3);font-size:12.5px">未找到与「${state.todoQuery}」相关的待办</div>`;
+  }
+  document.getElementById('todoList').innerHTML = html;
+}
+
+/* ============ 查找待办 ============ */
+function findTodo(id){ for(const k in TODOS){const t=TODOS[k].find(x=>x.id===id); if(t)return t;} return null;}
+
+/* ============ 点击待办 ============ */
+function openTodo(id){
+  const t=findTodo(id); if(!t)return;
+  setMode('todo');
+  state.selTodo=id; state.rightMode='todo'; state.skill=null;
+  renderTodos();
+  // 中栏
+  if(t.type==='疑似漏单'){ renderTaskLeak(t); }
+  else if(t.type==='待回款跟进'){ openCollection(); return; }
+  else if(t.type==='客户分级分析'){ expandTier(); }
+  else if(t.type==='重污率确认'){ renderHeavyWash(t); }
+  else if(t.type==='低消未达预警'){ renderLowConsume(t); }
+  else if(t.type==='拜访分析报告'){ renderVisitReport(t); }
+  else { renderTaskGeneric(t); }
+  // 右栏处理区
+  state.rightTab='copilot';
+  renderRight();
+}
+
+/* ============ 中栏：欢迎态 ============ */
+function renderWelcome(){
+  setMode('todo');
+  state.center='welcome'; state.selTodo=null;
+  document.getElementById('centerView').innerHTML=`
+   <div class="welcome">
+     <h1>早上好，张经理 👋</h1>
+     <div class="sub">今天有 <b>11</b> 项待办，其中 <b style="color:var(--red)">2</b> 项紧急，预计 <b>约 2.5 小时</b>。建议优先处理：</div>
+     <div class="sug-title">🔥 建议优先处理</div>
+     <div class="sug-list">
+       <div class="sug" onclick="openTodo('p1')"><div class="rank">1</div><div><div class="s-main">🔴 疑似漏单 · 观海听澜</div><div class="s-sub">已联系车队·待回复 · 进行中</div></div><div class="s-go">去处理 →</div></div>
+       <div class="sug" onclick="openTodo('u1')"><div class="rank">2</div><div><div class="s-main">🔴 高级客诉跟踪 · 望海大酒店</div><div class="s-sub">同类客诉本月第 3 次 · 已自动升级</div></div><div class="s-go">去处理 →</div></div>
+       <div class="sug" onclick="openCollection()"><div class="rank">3</div><div><div class="s-main">🟠 待回款跟进 · 6 家</div><div class="s-sub">回款冲刺期第 2 天 · ¥132,058</div></div><div class="s-go">去处理 →</div></div>
+     </div>
+     <div class="quick-tip">💡 <b>新手提示：</b>左栏是「系统替你盯着的活儿」，右栏「技能工具箱」是「你想主动查的事」。不知道从哪开始？点右上角 <b>❓怎么用</b>，或直接在右下输入框问小e。</div>
+   </div>`;
+}
+
+/* ============ 中栏：漏单任务详情 ============ */
+function renderTaskLeak(t){
+  state.center='task';
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head">
+     <h2>疑似漏单 · ${t.cust}</h2><span class="badge">P0 · 约 ${t.time}</span>
+     <div class="th-act"><button class="btn" onclick="toast('已升级客诉，已通知主管')">升级客诉</button><button class="btn primary" onclick="doneTask('${t.id}')">标记完成</button></div>
+   </div>
+   <div class="conclusion">
+     <div class="c-tag">🤖 小e 核实结论（已预填）</div>
+     <div class="c-body">污物已收 <b>6/16 22:15</b>（12 袋）· <span class="hl">净物未下单</span> · 该客户为「隔天收送」，按规则今日应送净。</div>
+     <div class="c-sug">建议：联系车队补送，并向客户说明。 <button class="mini-btn" onclick="toast('已刷新核实结论')" style="margin-left:6px">↻ 刷新</button></div>
+   </div>
+   <div class="tabs2"><div class="t2 on">订单时间线</div><div class="t2">收送记录</div><div class="t2">路线/司机</div><div class="t2">历史客诉</div></div>
+   <div class="timeline">
+     <div class="tl"><span class="tl-line"></span><span class="tl-dot"></span><span class="tl-time">6/16 22:15</span><span class="tl-txt">● 污物收运 12 袋（司机：王师傅·3号线）</span></div>
+     <div class="tl"><span class="tl-line"></span><span class="tl-dot muted"></span><span class="tl-time">6/15 18:30</span><span class="tl-txt">○ 净物送达 10 袋</span></div>
+     <div class="tl"><span class="tl-dot warn"></span><span class="tl-time">6/14</span><span class="tl-txt warn">⚠ 无净物订单（应送净日）</span></div>
+   </div>
+   <div class="action-bar">
+     <button class="btn" onclick="toast('正在呼起企微·联系3号线车队')">📞 联系车队</button>
+     <button class="btn" onclick="genTalk()">✍ 生成客户话术</button>
+     <button class="btn" onclick="toast('跳转 TexCloud · 订单管理')">↗ 跳转 TexCloud</button>
+     <button class="btn primary" onclick="doneTask('${t.id}')">✓ 标记完成</button>
+   </div>`;
+}
+function renderTaskGeneric(t){
+  state.center='task';
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head"><h2>${t.type} · ${t.cust}</h2><span class="badge">${(t.p||'p1').toUpperCase()} · 约 ${t.time}</span>
+     <div class="th-act"><button class="btn primary" onclick="doneTask('${t.id}')">标记完成</button></div></div>
+   <div class="conclusion"><div class="c-tag">🤖 小e 核实结论（已预填）</div>
+     <div class="c-body">${t.reason||t.status||''}</div>
+     <div class="c-sug">右侧小e 已带入「${t.cust}」上下文，可直接追问或执行操作。</div></div>
+   <div class="action-bar">
+     ${t.skill?`<button class="btn" onclick="toast('已在右栏发起：'+'${t.type}')">▶ 用相关技能处理</button>`:''}
+     <button class="btn" onclick="genTalk()">✍ 生成客户话术</button>
+     <button class="btn" onclick="toast('跳转 TexCloud 对应模块')">↗ 跳转 TexCloud</button>
+     <button class="btn primary" onclick="doneTask('${t.id}')">✓ 标记完成</button>
+   </div>`;
+}
+
+/* ============ 周期待办：毛巾重污率 TOP30 ============ */
+function renderHeavyWash(t){
+  state.center='heavy';
+  const names=['邻海畔','星河公寓','云栖公寓','悦海居','健龙酒店','锦尚酒店','海岸华庭','江畔人家','望海大酒店','锦庭酒店','观海听澜','美居酒店','悠然清居','艾朵公寓','清沐公寓','蓝湾酒店','晨曦旅馆','潮汐民宿','栖海小筑','远洋宾馆','逸品公寓','水岸华府','南山雅居','听涛阁','半岛假日','云顶酒店','锦绣花园','海德堡','金沙湾','栖霞居'];
+  const lv=['A','B','C','D'];
+  const rows=names.map((n,i)=>{
+    const r=(34.8-i*0.82).toFixed(1);
+    const mom=(i%3===0?'↑ +':i%3===1?'→ ':'↓ -')+((i%5+1)*0.6).toFixed(1)+'%';
+    const cnt=182-i*4;
+    const fee=parseFloat(r)>20;
+    return `<tr>
+      <td>${i+1}</td><td>${n}</td><td><span class="lvl ${lv[i%4]}">${lv[i%4]}</span></td>
+      <td style="font-weight:700;color:${parseFloat(r)>25?'var(--red)':parseFloat(r)>18?'var(--orange)':'var(--ink)'}">${r}%</td>
+      <td style="color:${mom.includes('↑')?'var(--red)':mom.includes('↓')?'var(--green-d)':'var(--ink-3)'}">${mom}</td>
+      <td>${cnt} 件</td>
+      <td>${fee?'<span class="hl">建议计费</span>':'维持观察'}</td>
+      <td><label style="cursor:pointer;font-size:12px"><input type="checkbox" ${fee?'checked':''} style="vertical-align:-1px"> 计费</label></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head"><h2>🧺 毛巾重污率确认 · TOP30 客户</h2><span class="badge">每月1号 · 待确认是否计费</span>
+     <div class="th-act"><button class="btn" onclick="toast('已导出明细 Excel')">导出明细</button><button class="btn primary" onclick="doneTask('${t.id}')">标记完成</button></div></div>
+   <div class="conclusion"><div class="c-tag">🤖 小e 结论（已预填）</div>
+     <div class="c-body">本月计算 <b>巾类（毛巾/浴巾）重污率</b>，共 <b>${names.length}</b> 家进入 TOP30，其中重污率 >20% 的 <b>${names.filter((n,i)=>34.8-i*0.82>20).length}</b> 家建议按重污计费。</div>
+     <div class="c-sug">勾选下方"计费"列后，可一键生成计费单并推送客户确认。</div></div>
+   <div class="panel"><div class="panel-h"><h3>毛巾重污率明细（近30天）</h3></div>
+   <table class="data"><thead><tr><th>排名</th><th>客户</th><th>等级</th><th>巾类重污率</th><th>环比</th><th>重污件数</th><th>系统建议</th><th>是否计费</th></tr></thead>
+   <tbody>${rows}</tbody></table></div>
+   <div class="action-bar">
+     <button class="btn" onclick="toast('已按系统建议勾选全部 >20% 客户')">按建议全选</button>
+     <button class="btn" onclick="genTalk()">✍ 生成计费说明话术</button>
+     <button class="btn primary" onclick="toast('已生成计费单并推送 6 家客户确认')">生成计费单 → 推送确认</button>
+     <button class="btn" onclick="doneTask('${t.id}')">✓ 标记完成</button>
+   </div>`;
+}
+
+/* ============ 周期待办：低消未达预警 ============ */
+function renderLowConsume(t){
+  state.center='heavy';
+  const list=[
+    {n:'锦尚酒店',lv:'B',use:1180,last:'¥1,620'},
+    {n:'江畔人家',lv:'C',use:980, last:'¥1,540'},
+    {n:'悠然清居',lv:'C',use:1320,last:'¥1,505'},
+  ];
+  const min=1500;
+  const rows=list.map(c=>{
+    const gap=min-c.use;
+    return `<tr>
+      <td>${c.n}</td><td><span class="lvl ${c.lv}">${c.lv}</span></td>
+      <td style="font-weight:700;color:var(--orange)">¥${c.use.toLocaleString()}</td>
+      <td>¥${min.toLocaleString()}</td>
+      <td style="color:var(--red);font-weight:700">-¥${gap.toLocaleString()}</td>
+      <td>${c.last}</td>
+      <td><button class="mini-btn" onclick="toast('已生成提醒话术·'+'${c.n}')">提醒话术</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head"><h2>📉 低消未达预警 · ${list.length} 家</h2><span class="badge">月底推送 · 最低消费 ¥1,500/月</span>
+     <div class="th-act"><button class="btn" onclick="toast('已导出名单')">导出名单</button><button class="btn primary" onclick="doneTask('${t.id}')">标记完成</button></div></div>
+   <div class="conclusion"><div class="c-tag">🤖 小e 结论（已预填）</div>
+     <div class="c-body">截至今日，<b>${list.length} 家</b>客户本月消费 <span class="hl">未达最低消费标准（¥1,500）</span>，距月底仅剩 5 天，建议尽快触达，避免流失或差额补收争议。</div>
+     <div class="c-sug">可批量生成"温馨提醒/差额说明"话术，或转销售跟进。</div></div>
+   <div class="panel"><div class="panel-h"><h3>未达低消客户明细（本月）</h3></div>
+   <table class="data"><thead><tr><th>客户</th><th>等级</th><th>本月消费</th><th>最低消费</th><th>差额</th><th>上月消费</th><th>操作</th></tr></thead>
+   <tbody>${rows}</tbody></table></div>
+   <div class="action-bar">
+     <button class="btn" onclick="toast('已批量生成 3 份提醒话术')">✍ 批量生成提醒话术</button>
+     <button class="btn" onclick="toast('已转销售跟进')">↗ 转销售跟进</button>
+     <button class="btn primary" onclick="doneTask('${t.id}')">✓ 标记完成</button>
+   </div>`;
+}
+
+/* ============ 周期待办：拜访分析报告（可复制/导出） ============ */
+function copyReport(){
+  const el=document.getElementById('reportBody');
+  const txt=el? el.innerText : '';
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast('✓ 报告全文已复制到剪贴板'), ()=>toast('复制失败，请手动选择'));
+  } else { toast('当前环境不支持自动复制，请手动选择'); }
+}
+function renderVisitReport(t){
+  state.center='heavy';
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head"><h2>📑 酒店布草洗涤行业市场分析报告</h2><span class="badge">月度 · 基于 CRM 拜访 + 经营数据</span>
+     <div class="th-act"><button class="btn" onclick="copyReport()">📋 复制报告</button><button class="btn" onclick="toast('已导出 PDF / Word')">⬇ 导出</button><button class="btn primary" onclick="doneTask('${t.id}')">标记完成</button></div></div>
+   <div id="reportBody">
+   <div class="panel"><div class="panel-h"><h3>报告摘要</h3></div>
+     <p style="font-size:13px;color:var(--ink-2);line-height:1.9">本报告基于本月 5 家重点客户拜访记录与平台经营数据，分析酒店/公寓布草集中洗涤行业的市场环境、本机构客户结构与经营风险，并给出下一步经营建议。报告周期：2026-06。覆盖客户 185 家，重点拜访 5 家，新增意向 2 家。</p></div>
+
+   <div class="panel"><div class="panel-h"><h3>一、行业概况</h3></div>
+     <p style="font-size:13px;color:var(--ink-2);line-height:1.9">酒店布草集中洗涤受旅游住宿景气度直接驱动。本地中高端酒店与长租公寓持续扩张，对"按件计费 + RFID 全流程追溯"的标准化洗涤服务需求上升。客户核心关注点集中在：① 布草洁净度与重污/反洗率；② 收送及时性与漏单风险；③ 计费透明度与对账效率；④ 布草损耗与滞留管理。</p></div>
+
+   <div class="panel"><div class="panel-h"><h3>二、市场规模与增长</h3></div>
+     <p style="font-size:13px;color:var(--ink-2);line-height:1.9">区域内可服务床位约 4.2 万张，估算月洗涤量约 95 万件，对应月市场规模约 ¥820 万，同比增长约 11%。其中 A/B 级酒店贡献约 68% 的营收，长租公寓为增速最快的细分（同比 +19%）。旺季（6–8 月）洗涤量较淡季提升约 25%，对产能与车队调度提出更高要求。</p></div>
+
+   <div class="panel"><div class="panel-h"><h3>三、竞争格局</h3></div>
+     <table class="data"><thead><tr><th>类型</th><th>份额</th><th>优势</th><th>劣势</th></tr></thead><tbody>
+       <tr><td>本机构（RFID 标准化）</td><td>约 22%</td><td>全流程追溯、对账透明、漏单可控</td><td>单价略高</td></tr>
+       <tr><td>区域中型洗涤厂</td><td>约 35%</td><td>价格灵活、本地关系</td><td>追溯弱、对账纠纷多</td></tr>
+       <tr><td>酒店自营 / 小作坊</td><td>约 30%</td><td>响应快</td><td>质量与产能不稳定</td></tr>
+       <tr><td>全国连锁品牌</td><td>约 13%</td><td>品牌、规模</td><td>本地服务半径有限</td></tr>
+     </tbody></table></div>
+
+   <div class="panel"><div class="panel-h"><h3>四、本机构客户结构分析</h3></div>
+     <table class="data"><thead><tr><th>等级</th><th>客户占比</th><th>营收占比</th><th>平均单床月消费</th><th>平均回款及时性</th></tr></thead><tbody>
+       <tr><td><span class="lvl A">A</span></td><td>15%</td><td>34%</td><td>¥69</td><td>良好</td></tr>
+       <tr><td><span class="lvl B">B</span></td><td>38%</td><td>41%</td><td>¥52</td><td>一般</td></tr>
+       <tr><td><span class="lvl C">C</span></td><td>32%</td><td>20%</td><td>¥41</td><td>一般</td></tr>
+       <tr><td><span class="lvl D">D</span></td><td>15%</td><td>5%</td><td>¥28</td><td>较差</td></tr>
+     </tbody></table>
+     <p style="font-size:13px;color:var(--ink-2);line-height:1.9;margin-top:10px">B/C 级客户数量最多但单床消费偏低；D 级客户回款与滞留风险集中，建议择优汰换或调整价格策略。A 级客户粘性高，应加强拜访维护与增值服务。</p></div>
+
+   <div class="panel"><div class="panel-h"><h3>五、本月重点拜访要点（5 家）</h3></div>
+     <table class="data"><thead><tr><th>客户</th><th>等级</th><th>拜访结论</th><th>跟进动作</th></tr></thead><tbody>
+       <tr><td>观海听澜</td><td><span class="lvl A">A</span></td><td>满意度高，关注旺季产能</td><td>承诺优先排单</td></tr>
+       <tr><td>望海大酒店</td><td><span class="lvl B">B</span></td><td>本月客诉 3 次，存在流失风险</td><td>已升级 + 专项改善</td></tr>
+       <tr><td>健龙酒店</td><td><span class="lvl B">B</span></td><td>反洗率偏高，质疑计费</td><td>出具重污率报告说明</td></tr>
+       <tr><td>邻海畔</td><td><span class="lvl D">D</span></td><td>回款逾期、滞留高</td><td>评估调价或汰换</td></tr>
+       <tr><td>锦尚酒店</td><td><span class="lvl B">B</span></td><td>消费未达低消标准</td><td>提醒 + 套餐升级建议</td></tr>
+     </tbody></table></div>
+
+   <div class="panel"><div class="panel-h"><h3>六、风险与机会</h3></div>
+     <p style="font-size:13px;color:var(--ink-2);line-height:1.9"><b>风险：</b>旺季产能与车队调度压力上升，漏单/重污争议增多；中型竞品价格战；D 级客户回款风险集中。<br><b>机会：</b>长租公寓细分高速增长；RFID 追溯与透明对账是差异化壁垒；可向重点客户拓展布草租赁/以旧换新等增值服务。</p></div>
+
+   <div class="panel"><div class="panel-h"><h3>七、经营建议</h3></div>
+     <p style="font-size:13px;color:var(--ink-2);line-height:1.9">1）旺季前完成车队与产能预案，重点保障 A 级客户时效；<br>2）以重污率/反洗率报告主动沟通计费，减少对账纠纷；<br>3）对 D 级低质客户分批调价或汰换，释放产能给高价值客户；<br>4）针对长租公寓推出标准化套餐，抢占增量市场；<br>5）建立客户分级维护机制，A 级月度拜访、B/C 级季度回访。</p></div>
+   </div>
+   <div class="action-bar">
+     <button class="btn" onclick="copyReport()">📋 复制全文</button>
+     <button class="btn" onclick="toast('已导出 PDF / Word')">⬇ 导出报告</button>
+     <button class="btn" onclick="toast('已发送至邮箱 / 企微')">↗ 发送</button>
+     <button class="btn primary" onclick="doneTask('${t.id}')">✓ 标记完成</button>
+   </div>`;
+}
+/* ============ 已完成待办 ============ */
+let COMPLETED = [
+  {id:'d1', grp:'today',  p:'p2', type:'是否收送核实', cust:'江畔人家', doneAt:'09:12'},
+  {id:'d2', grp:'urgent', p:'p0', type:'疑似漏单',     cust:'锦尚酒店', doneAt:'08:40'},
+];
+function nowHM(){ const d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function grpName(k){ return {progress:'进行中',urgent:'紧急',today:'今日',period:'周期'}[k]||'今日'; }
+function completedGroup(){
+  if(!COMPLETED.length) return '';
+  return `<div class="group${collapsedGroups.has('done')?' collapsed':''}" id="grp-done" style="margin-top:6px">
+    <div class="group-head" onclick="toggleGroup('done',this.parentNode)"><span class="caret">▼</span>✓ 已完成 · 今日 <span class="gh-count">(${COMPLETED.length})</span></div>
+    <div class="group-body">${COMPLETED.map(c=>`<div class="todo done">
+      <div class="t-top"><span class="dotmark ${c.p}"></span><span class="t-type" style="text-decoration:line-through;color:var(--ink-3)">${c.type}</span><span class="t-cust">·${c.cust}</span></div>
+      <div class="t-foot"><span class="t-time">✓ ${c.doneAt} 完成</span><button class="t-act" onclick="event.stopPropagation();restoreTodo('${c.id}')">↩ 标记未完成</button></div>
+    </div>`).join('')}</div></div>`;
+}
+function doneTask(id){
+  let moved=null, grp=null;
+  for(const k in TODOS){ const i=TODOS[k].findIndex(x=>x.id===id); if(i>=0){ moved=TODOS[k].splice(i,1)[0]; grp=k; break; } }
+  if(moved) COMPLETED.unshift({id:moved.id, grp:grp, type:moved.type, cust:moved.cust, p:moved.p||'p2', doneAt:nowHM()});
+  if(document.body.classList.contains('mode-skill')) exitSkillMode();
+  toast('✓ 已完成，归档到左栏「已完成 · 今日」（可一键恢复）');
+  state.rightTab='tools'; state.rightMode='idle'; state.skill=null; state.selTodo=null;
+  renderTodos(); renderWelcome(); renderRight();
+}
+function restoreTodo(id){
+  const i=COMPLETED.findIndex(x=>x.id===id); if(i<0)return;
+  const c=COMPLETED.splice(i,1)[0];
+  const grp = TODOS[c.grp]? c.grp : 'today';
+  TODOS[grp].push({id:c.id, src:'sys', p:c.p, type:c.type, cust:c.cust, reason:'（已从「已完成」恢复为未完成）', time:'—'});
+  renderTodos(); toast('已恢复为未完成，回到「'+grpName(grp)+'」分组');
+}
+
+/* ============ 中栏：回款列表（重内容也可在中区） ============ */
+function openCollection(){
+  setMode('todo');
+  state.center='collection'; state.selTodo='c1'; renderTodos();
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head"><h2>待回款跟进 · 回款冲刺期</h2><span class="badge">第 2 天 / 共 4 天</span>
+     <div class="th-act"><button class="btn" onclick="toast('已导出对账单')">导出</button><button class="btn primary" onclick="toast('已生成 6 份催款话术，写入右栏')">批量催款话术</button></div></div>
+   <div class="panel"><div class="panel-h"><h3>未回款客户（6 家 · ¥132,058）</h3></div>
+   <table class="data"><thead><tr><th>客户</th><th>等级</th><th>欠款金额</th><th>账期</th><th>上次催收</th><th>操作</th></tr></thead><tbody>
+     <tr><td>邻海畔</td><td><span class="lvl D">D</span></td><td>¥12,800</td><td>逾期 3 天</td><td>6/15 电话</td><td><button class="mini-btn" onclick="toast('生成催款话术·邻海畔')">催款</button></td></tr>
+     <tr><td>健龙酒店</td><td><span class="lvl B">B</span></td><td>¥5,600</td><td>逾期 1 天</td><td>6/15 群发</td><td><button class="mini-btn" onclick="toast('生成催款话术·健龙酒店')">催款</button></td></tr>
+     <tr><td>星河公寓</td><td><span class="lvl C">C</span></td><td>¥9,200</td><td>到期日</td><td>—</td><td><button class="mini-btn" onclick="toast('生成催款话术·星河公寓')">催款</button></td></tr>
+     <tr><td>锦庭酒店</td><td><span class="lvl B">B</span></td><td>¥18,400</td><td>逾期 2 天</td><td>6/15 电话</td><td><button class="mini-btn" onclick="toast('生成催款话术·锦庭酒店')">催款</button></td></tr>
+     <tr><td>悠然清居</td><td><span class="lvl C">C</span></td><td>¥7,058</td><td>到期日</td><td>—</td><td><button class="mini-btn" onclick="toast('生成催款话术·悠然清居')">催款</button></td></tr>
+     <tr><td>观海听澜</td><td><span class="lvl A">A</span></td><td>¥8,320</td><td>逾期 1 天</td><td>6/15 群发</td><td><button class="mini-btn" onclick="toast('生成催款话术·观海听澜')">催款</button></td></tr>
+   </tbody></table></div>`;
+  state.rightMode='skill'; state.skill={id:'bill',name:'回款助手',type:'flow'}; state.rightTab='copilot';
+  renderRight();
+}
+
+/* ============ 客户列表（我的客户 / 需关注 / 滞留预警） ============ */
+function renderCustomers(filter){
+  filter=filter||'all';
+  setMode('todo');
+  state.center='customers'; state.selTodo=null; renderTodos();
+  const titleMap={all:'我的客户',attention:'需关注客户',retain:'滞留预警客户',rewash:'反洗率偏高客户'};
+  const list = filter==='all'?CUSTOMERS:CUSTOMERS.filter(c=>c.flags.includes(filter));
+  const chip=(k,t)=>`<button class="btn ${filter===k?'primary':''}" onclick="renderCustomers('${k}')">${t}</button>`;
+  const rows=list.map(c=>`<tr>
+      <td style="font-weight:700">${c.name}</td>
+      <td><span class="lvl ${c.lvl}">${c.lvl}</span></td>
+      <td>${c.bed} 床</td>
+      <td>${c.retain.replace('%','')>30?`<span style="color:var(--orange);font-weight:600">滞留 ${c.retain}</span>`:c.retain}</td>
+      <td style="color:${c.risk==='正常'?'var(--ink-3)':'var(--ink-2)'}">${c.risk}</td>
+      <td style="color:var(--ink-3)">${c.last}</td>
+      <td><button class="mini-btn" onclick="renderCustomer360('${c.name}')">查看 360</button></td>
+    </tr>`).join('');
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head"><h2>${titleMap[filter]}</h2>
+     <span class="badge" style="background:var(--green-l);color:var(--green-d)">${filter==='all'?'共 185 家 · 示例 '+list.length+' 家':list.length+' 家'}</span>
+     <div class="th-act"><button class="btn" onclick="toast('已导出客户清单')">导出</button></div></div>
+   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+     ${chip('all','全部')}${chip('attention','需关注 '+CUSTOMERS.filter(c=>c.flags.includes('attention')).length)}
+     ${chip('retain','滞留>30% '+CUSTOMERS.filter(c=>c.flags.includes('retain')).length)}
+     ${chip('rewash','反洗率高 '+CUSTOMERS.filter(c=>c.flags.includes('rewash')).length)}
+     <button class="btn" onclick="openCollection()">待回款 6 →</button>
+   </div>
+   <div class="panel" style="padding:8px 12px 4px">
+     <table class="data"><thead><tr><th>客户名</th><th>等级</th><th>床位</th><th>滞留比例</th><th>风险原因</th><th>最近动态</th><th>操作</th></tr></thead>
+     <tbody>${rows}</tbody></table>
+   </div>`;
+}
+
+/* ============ 客户 360 ============ */
+function renderCustomer360(name){
+  const c=CUSTOMERS.find(x=>x.name===name); if(!c)return;
+  setMode('todo');
+  state.center='c360'; state.selTodo=null; renderTodos();
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head"><span class="back" style="cursor:pointer;color:var(--green-d);font-weight:700;font-size:12px;margin-right:4px" onclick="renderCustomers('all')">← 客户列表</span>
+     <h2>${name}</h2><span class="badge" style="background:var(--green-l);color:var(--green-d)">${c.lvl} 级 · ${c.bed} 床</span>
+     <div class="th-act"><button class="btn primary" onclick="state.rightMode='idle';state.skill=null;state.rightTab='copilot';renderRight();document.getElementById('chatInput').focus()">针对此客户提问</button></div></div>
+   <div style="color:var(--ink-2);font-size:12.5px;margin:-6px 0 16px">风险：${c.risk==='正常'?'暂无明显风险':c.risk}</div>
+   <div class="panel"><div class="panel-h"><h3>概览</h3></div>
+     <div class="cp-grid" style="grid-template-columns:repeat(4,1fr)">
+       <div class="cp-cell"><div class="cp-lab">未付账单</div><div class="cp-num">${c.bill}</div></div>
+       <div class="cp-cell"><div class="cp-lab">滞留比例</div><div class="cp-num" style="color:${c.retain.replace('%','')>30?'var(--orange)':'var(--ink)'}">${c.retain}</div></div>
+       <div class="cp-cell"><div class="cp-lab">反洗率</div><div class="cp-num" style="color:${c.rewash.replace('%','')>25?'var(--red)':'var(--ink)'}">${c.rewash}</div></div>
+       <div class="cp-cell"><div class="cp-lab">最近动态</div><div class="cp-num" style="font-size:13px">${c.last}</div></div>
+     </div></div>
+   <div class="panel"><div class="panel-h"><h3>近期动态</h3></div>
+     <div class="timeline">
+       <div class="tl"><span class="tl-line"></span><span class="tl-dot"></span><span class="tl-time">今日</span><span class="tl-txt">${c.last}</span></div>
+       <div class="tl"><span class="tl-line"></span><span class="tl-dot muted"></span><span class="tl-time">6/10</span><span class="tl-txt">客诉-配送（已闭环）</span></div>
+       <div class="tl"><span class="tl-dot muted"></span><span class="tl-time">5/28</span><span class="tl-txt">清滞留 12 件</span></div>
+     </div>
+     <div class="action-bar">
+       <button class="btn" onclick="openSkill('rewash')">查反洗率</button>
+       <button class="btn" onclick="openSkill('bill')">查账单</button>
+       <button class="btn" onclick="openSkill('retain')">清滞留</button>
+       <button class="btn primary" onclick="expandTier()">在工作区分析 ↗</button>
+     </div></div>`;
+}
+
+/* ============ 历史对话记录 ============ */
+function renderHistory(){
+  setMode('todo');
+  state.center='history'; state.selTodo=null; renderTodos();
+  const grp=Object.keys(HISTORY).map(g=>`
+    <div style="margin-bottom:18px">
+      <div style="font-size:12px;font-weight:700;color:var(--ink-3);margin-bottom:8px">${g}</div>
+      ${HISTORY[g].map(h=>`<div class="sug" style="max-width:none;margin-bottom:8px" onclick="${h.act}">
+        <div class="rc-ic ${h.warn?'prog':''}" style="width:30px;height:30px">${h.ic}</div>
+        <div><div class="s-main">${h.t} ${h.warn?'<span class="rc-warn">⚠</span>':''}</div><div class="s-sub">${h.meta}</div></div>
+        <span class="src-badge ${h.tag.includes('待办')?'sys':'me'}" style="margin-left:auto">${h.tag}</span>
+        <span class="s-go" style="margin-left:10px">打开 →</span>
+      </div>`).join('')}
+    </div>`).join('');
+  document.getElementById('centerView').innerHTML=`
+   <div class="task-head"><h2>🕐 历史对话记录</h2><div class="th-act"><button class="btn" onclick="renderWelcome()">返回工作台</button></div></div>
+   <div class="search-box" style="max-width:360px;margin-bottom:18px">🔍 <input placeholder="搜索会话标题 / 客户名"></div>
+   ${grp}`;
+}
+
+/* ============ 重内容提级：反洗率 / 客户分级 ============ */
+function expandRewash(cust){
+  setMode('todo');
+  state.center='heavy';
+  document.getElementById('centerView').innerHTML=`
+   <div class="panel"><div class="panel-h"><h3>💧 反洗率分析 · ${cust}（近 30 天）</h3><span class="back" onclick="toast('已折叠回右栏')">仅在工作区展开</span></div>
+   <div class="bars">
+     <div class="bar-col"><div class="bar up" style="height:80%"><span class="bv">32.3%↑</span></div><div class="bl">床单</div></div>
+     <div class="bar-col"><div class="bar up" style="height:67%"><span class="bv">26.8%↑</span></div><div class="bl">被套</div></div>
+     <div class="bar-col"><div class="bar" style="height:48%"><span class="bv">19.4%</span></div><div class="bl">枕套</div></div>
+     <div class="bar-col"><div class="bar" style="height:30%"><span class="bv">12.1%</span></div><div class="bl">毛巾</div></div>
+   </div></div>
+   <div class="panel"><div class="panel-h"><h3>分品类反洗明细</h3></div>
+   <table class="data"><thead><tr><th>品类</th><th>本期反洗率</th><th>上期</th><th>变化</th><th>主要原因</th><th>建议</th></tr></thead><tbody>
+     <tr><td>床单</td><td style="color:var(--red);font-weight:700">32.3%</td><td>30.5%</td><td style="color:var(--red)">↑1.8%</td><td>植物油 7.6% / 黄斑 5.4%</td><td>客户拜访 + 跟进车间</td></tr>
+     <tr><td>被套</td><td style="color:var(--red);font-weight:700">26.8%</td><td>25.0%</td><td style="color:var(--red)">↑1.8%</td><td>残胶 6.3% / 植物油 4.3%</td><td>核实化料</td></tr>
+     <tr><td>枕套</td><td>19.4%</td><td>18.1%</td><td style="color:var(--orange)">↑1.3%</td><td>擦痕 4% / 锈 3.5%</td><td>正常解释</td></tr>
+   </tbody></table></div>`;
+}
+function expandTier(){
+  setMode('todo');
+  state.center='heavy';
+  document.getElementById('centerView').innerHTML=`
+   <div class="panel"><div class="panel-h"><h3>⭐ 客户分级分析（185 家）</h3><span class="back" onclick="toast('已折叠回右栏')">在工作区展开</span></div>
+   <div class="donut-wrap">
+     <div class="donut"><div class="dc"><b>185</b><span>共（家）</span></div></div>
+     <div class="legend">
+       <div class="lg"><i style="background:#3b82f6"></i>A 级客户 <b>25%</b></div>
+       <div class="lg"><i style="background:#35C393"></i>B 级客户 <b>60%</b></div>
+       <div class="lg"><i style="background:#f59e0b"></i>C 级客户 <b>10%</b></div>
+       <div class="lg"><i style="background:#9ca3af"></i>D 级客户 <b>5%</b></div>
+     </div>
+   </div></div>
+   <div class="panel"><div class="panel-h"><h3>各等级详细数据</h3></div>
+   <table class="data"><thead><tr><th>等级</th><th>客户名</th><th>床位</th><th>单床月消费</th><th>回款及时性</th><th>滞留比例</th></tr></thead><tbody>
+     <tr><td><span class="lvl A">A</span></td><td>观海听澜</td><td>120</td><td>¥69</td><td>良好</td><td>28%</td></tr>
+     <tr><td><span class="lvl B">B</span></td><td>健龙酒店</td><td>80</td><td>¥52</td><td>一般</td><td>15%</td></tr>
+     <tr><td><span class="lvl C">C</span></td><td>艾朵公寓</td><td>45</td><td>¥41</td><td>一般</td><td>20%</td></tr>
+     <tr><td><span class="lvl D">D</span></td><td>邻海畔</td><td>45</td><td>¥28</td><td>差</td><td>35%</td></tr>
+   </tbody></table></div>
+   <div class="panel"><div class="panel-h"><h3>📝 分析总结</h3></div>
+   <p style="font-size:13px;color:var(--ink-2);line-height:1.8">B/C 级客户占比最多；邻海畔单床消费低、回款差、滞留高，可考虑淘汰或调整价格。建议对 A 级客户加强拜访维护粘度。</p>
+   <div class="action-bar"><button class="btn" onclick="toast('已导出分级报告')">导出报告</button><button class="btn primary" onclick="toast('已生成 3 条待办 → 工作台')">生成待办 → 工作台</button></div></div>`;
+}
+
+/* ============ 右栏渲染 ============ */
+function switchRightTab(tab){ state.rightTab=tab; renderRight(); }
+function updateRightTabs(){
+  document.querySelectorAll('#rightTabs .rt').forEach(b=>b.classList.toggle('on', b.dataset.t===state.rightTab));
+  const cop=document.querySelector('#rightTabs .rt[data-t=copilot]');
+  if(cop) cop.textContent = state.selTodo ? '💬 小e · 处理中' : '💬 小e';
+}
+function renderRight(){
+  updateRightTabs();
+  // 技能工具箱是「纯入口」：隐藏底部输入框与免责声明
+  const onTools = state.rightTab==='tools';
+  const iz=document.getElementById('inputZone'); if(iz) iz.style.display = onTools?'none':'';
+  const dc=document.getElementById('rightDisc'); if(dc) dc.style.display = onTools?'none':'';
+  if(onTools){
+    document.getElementById('ctxBarWrap').innerHTML='';
+    renderRightIdle();
+    return;
+  }
+  renderCtxBar();
+  if(state.rightMode==='todo' && state.selTodo) renderRightTodo(findTodo(state.selTodo));
+  else if(state.rightMode==='skill') renderRightSkill();
+  else renderRightGreeting();
+}
+function renderRightGreeting(){
+  document.getElementById('rhSub').textContent='你的智能洗涤助手';
+  document.getElementById('rightBody').innerHTML=`<div class="msg bot"><div class="m-ava">e</div><div class="bubble">你好，我是小e 👋<br>左侧点开待办，我来帮你逐项处理；想主动查数据/发起技能，点上方「🧰 技能工具箱」。</div></div>`;
+}
+function renderCtxBar(){
+  const w=document.getElementById('ctxBarWrap');
+  if(state.rightMode==='skill' && state.skill){
+    w.innerHTML=`<div class="ctx-bar"><span class="cx-ic">🔧</span><span class="cx-txt">${state.skill.name}</span>
+      <div class="cx-r">
+        <button class="cx-btn" onclick="toggleSwitchMenu(event)">换技能 ▾<div class="switch-menu" id="switchMenu" onclick="event.stopPropagation()">
+          <div class="sm-head">— 切换技能 —</div>
+          <div class="sm-grid">${SKILLS.slice(0,6).map(s=>`<div class="sm-item" onclick="openSkill('${s.id}')"><span class="sm-ic">${s.ic}</span>${s.name.slice(0,4)}</div>`).join('')}</div>
+          <div class="sm-head">— 继续最近对话 —</div>
+          ${RECENT.map(r=>`<div class="sm-item" onclick="resumeRecent('${r.id}')"><span class="sm-ic">${r.ic}</span>${r.t} <span class="sm-meta">${r.s.split('·')[0]}</span></div>`).join('')}
+        </div></button>
+        <button class="cx-btn" onclick="backToTools()">✕</button>
+      </div></div>`;
+  } else if(state.rightMode==='todo' && state.selTodo){
+    const t=findTodo(state.selTodo);
+    w.innerHTML=`<div class="ctx-bar"><span class="cx-ic">📎</span><span class="cx-txt">${t.type}</span><span class="cx-sub">· ${t.cust}</span>
+      <div class="cx-r"><button class="cx-btn" onclick="backToTools()">✕</button></div></div>`;
+  } else { w.innerHTML=''; }
+}
+function renderRightIdle(){
+  document.getElementById('rhSub').textContent='你的智能洗涤助手';
+  document.getElementById('rightBody').innerHTML = `
+    <div class="tools-h" id="toolsBox">🧰 技能工具箱 <span style="color:var(--ink-3);font-weight:400;font-size:11px">· 点开即用</span></div>
+    <div class="tools-grid">
+      ${SKILLS.map(s=>`<div class="tool" onclick="openSkill('${s.id}')"><div class="tl-ic">${s.ic}</div><div class="tl-name">${s.name}</div><div class="tl-eg">${s.eg}</div></div>`).join('')}
+    </div>`;
+}
+function renderRightTodo(t){
+  document.getElementById('rhSub').textContent='处理中';
+  let msgs='';
+  if(t.type==='疑似漏单'){
+    msgs=`<div class="msg bot"><div class="m-ava">e</div><div class="bubble">对比净物/污物订单：6/16 收污后<span class="hl">无净物下单</span>。该客户为隔天收送，建议先联系 3 号线车队补送。</div></div>
+      <div class="mini-actions"><button class="mini-btn" onclick="genTalk()">生成客户话术</button><button class="mini-btn" onclick="enterSkillMode('rewash','观海听澜')">查反洗率↗</button><button class="mini-btn" onclick="doneTask('${t.id}')">标记完成</button></div>`;
+    if(t.status) msgs=`<div class="msg user"><div class="m-ava">张</div><div class="bubble">车队已联系</div></div>`+msgs.replace('对比净物','好的。我已记录"已联系车队"。补充：对比净物');
+  } else {
+    msgs=`<div class="msg bot"><div class="m-ava">e</div><div class="bubble">已带入「${t.cust}」上下文。${t.reason||t.status||''}<br>需要我生成客户话术，还是查看相关数据？</div></div>
+      <div class="mini-actions"><button class="mini-btn" onclick="genTalk()">生成话术</button><button class="mini-btn" onclick="doneTask('${t.id}')">标记完成</button></div>`;
+  }
+  document.getElementById('rightBody').innerHTML=msgs;
+  scrollRight();
+}
+
+/* ============ 技能（旧的窄栏版已被双模式宽画布替代，见顶部 openSkill/enterSkillMode/wideAnswer/resumeRecent） ============ */
+function backToTools(){ state.rightMode='idle'; state.skill=null; state.selTodo=null; state.rightTab='tools'; renderTodos(); renderRight(); toast('已归档到「最近」，工具箱已返回'); }
+function resumeRecent(id){
+  const r=RECENT.find(x=>x.id===id); if(!r)return;
+  if(r.prog){
+    enterSkillMode('onboard',null,`<div class="wmsg bot"><div class="w-ava">e</div><div class="w-body"><div class="w-text">已恢复会话：<b>${r.t}</b>（进度 ②/④，已填合同信息）。继续下一步？</div><div class="w-chips"><span class="chip" onclick="wideAnswer('onboard','美居酒店')">继续步骤 ③</span></div></div></div>`);
+  } else {
+    enterSkillMode('rewash',null,`<div class="wmsg bot"><div class="w-ava">e</div><div class="w-body"><div class="w-text">已恢复会话：<b>${r.t}</b>（含此前 3 条记录）。</div></div></div>`+wideRewash('观海听澜'));
+  }
+}
+
+/* ============ 通用 ============ */
+function genTalk(){
+  const body=document.getElementById('rightBody');
+  body.innerHTML+=`<div class="msg bot"><div class="m-ava">e</div><div class="bubble">已为你生成客户话术：<br>"您好，关于今日布草配送我们正在为您加急补送，预计 2 小时内送达，给您带来不便十分抱歉～"</div></div>
+    <div class="mini-actions"><button class="mini-btn" onclick="toast('已复制')">复制</button><button class="mini-btn" onclick="toast('已通过企微发送')">企微发送</button></div>`;
+  scrollRight(); toast('已生成客户话术');
+}
+function sendMsg(){
+  const inp=document.getElementById('chatInput'); const v=inp.value.trim(); if(!v)return;
+  if(state.rightMode==='idle'){ state.rightMode='skill'; state.skill={id:'free',name:'自由提问',type:'query'}; renderCtxBar(); document.getElementById('rightBody').innerHTML=''; }
+  const body=document.getElementById('rightBody');
+  body.innerHTML+=`<div class="msg user"><div class="m-ava">张</div><div class="bubble">${v}</div></div>`;
+  inp.value=''; scrollRight();
+  setTimeout(()=>{
+    body.innerHTML+=`<div class="msg bot"><div class="m-ava">e</div><div class="bubble">收到～（演示）这里小e 会按"轻/中/重"三档回复：短结论直接出，图表大表则给摘要卡并在中间工作区展开。</div></div>`;
+    scrollRight();
+  },300);
+}
+function scrollRight(){ const b=document.getElementById('rightBody'); setTimeout(()=>b.scrollTop=b.scrollHeight,30); }
+
+/* ============ 菜单 / 帮助 / toast ============ */
+function toggleSwitchMenu(e){ e.stopPropagation(); const m=document.getElementById('switchMenu'); if(m)m.classList.toggle('show'); }
+document.addEventListener('click',()=>{ document.querySelectorAll('.switch-menu.show,.dropdown.show').forEach(x=>x.classList.remove('show')); });
+document.getElementById('roleSwitch').addEventListener('click',e=>{ e.stopPropagation(); document.getElementById('roleDD').classList.toggle('show'); });
+function toggleHelp(v){ document.getElementById('helpPanel').classList.toggle('show',v); }
+function openHistory(){
+  document.getElementById('histList').innerHTML = Object.keys(HISTORY).map(g=>
+    `<div class="hist-group">${g}</div>`+HISTORY[g].map(h=>
+      `<div class="hist-item" onclick="closeHistory();${h.act}">
+        <div class="rc-ic ${h.warn?'prog':''}">${h.ic}</div>
+        <div style="flex:1;min-width:0"><div class="rc-t">${h.t} ${h.warn?'⚠':''}</div><div class="rc-s">${h.meta}</div></div>
+        <span class="src-badge ${h.tag.indexOf('待办')>=0?'sys':'me'}">${h.tag}</span>
+      </div>`).join('')).join('');
+  document.getElementById('historyPanel').classList.add('show');
+}
+function closeHistory(){ document.getElementById('historyPanel').classList.remove('show'); }
+document.getElementById('helpBtn').addEventListener('click',()=>toggleHelp(true));
+let toastT;
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
+
+/* ============ 新手导览 ============ */
+const TOUR=[
+  {el:'#todoList',title:'① 今日待办',text:'系统替你盯着的活儿都在这——漏单、客诉、回款、重污率…自动按优先级排好。每条写了"为什么出现"，点一下就能处理。'},
+  {el:'#rightCol',title:'② 技能工具箱',text:'想主动查/办一件事（某客户送净了吗、反洗率、开通新客户…），点这里的技能卡。小e 会引导你补全信息，秒出结果。'},
+  {el:'.ask-top',title:'③ 有问题直接问小e',text:'任何跟待办/技能无关的问题，点顶部这个绿色按钮开启「新对话」，小e 会在中右合并的宽画布里作答，表格图表都铺得开。处理某条待办时，右栏底部也有输入框做轻量追问。'},
+];
+let tourI=0;
+function startTour(){ tourI=0; document.getElementById('tourMask').classList.add('show'); showTour(); }
+function showTour(){
+  const s=TOUR[tourI]; const el=document.querySelector(s.el.split(',')[0]); const r=el.getBoundingClientRect();
+  const hl=document.getElementById('tourHl');
+  hl.style.left=(r.left+4)+'px'; hl.style.top=(r.top+4)+'px'; hl.style.width=(r.width-8)+'px'; hl.style.height=(Math.min(r.height,560)-8)+'px';
+  const pop=document.getElementById('tourPop');
+  document.getElementById('tourTitle').textContent='💡 '+s.title;
+  document.getElementById('tourText').textContent=s.text;
+  document.getElementById('tourStep').textContent=`${tourI+1} / ${TOUR.length}`;
+  document.getElementById('tourNext').textContent = tourI===TOUR.length-1?'我知道了':'下一步';
+  let left=r.right+16; if(left+320>window.innerWidth) left=r.left-336;
+  if(left<16) left=window.innerWidth/2-150;
+  pop.style.left=left+'px'; pop.style.top=Math.max(70,Math.min(r.top, window.innerHeight-220))+'px';
+}
+function nextTour(){ tourI++; if(tourI>=TOUR.length){ endTour(); } else showTour(); }
+function endTour(){ document.getElementById('tourMask').classList.remove('show'); localStorage.setItem('lai_tour','1'); }
+
+/* ============ 初始化 ============ */
+renderTodos(); renderWelcome(); state.rightMode='idle'; renderRight();
+if(!localStorage.getItem('lai_tour')){ setTimeout(startTour,600); }
+</script>
+</body>
+</html>
